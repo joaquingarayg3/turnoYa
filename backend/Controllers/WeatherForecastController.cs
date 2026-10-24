@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace turnoYa.Controllers;
+namespace backend.Controllers;
 
 [ApiController]
 [Route("[controller]")]
