@@ -1,0 +1,6 @@
+@turnoYa_HostAddress = http://localhost:5136
+
+GET {{turnoYa_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
