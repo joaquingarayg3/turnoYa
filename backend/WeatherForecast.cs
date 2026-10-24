@@ -1,4 +1,4 @@
-namespace turnoYa;
+namespace backend;
 
 public class WeatherForecast
 {
