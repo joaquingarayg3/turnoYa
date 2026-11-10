@@ -1,5 +1,6 @@
 using System.Net;
 using backend.Dtos.Servicio;
+using backend.Mapping;
 using backend.Models;
 using backend.Repositories;
 using backend.Utils.Respuestas;
@@ -23,7 +24,7 @@ public class ServiciosService
     {
         await _negociosService.ObtenerEntidadPropia(negocioId, usuarioId);
         var lista = await _repo.ObtenerTodos(s => s.NegocioId == negocioId);
-        return lista.OrderBy(s => s.Nombre).Select(ServicioDTO.DesdeModelo).ToList();
+        return lista.OrderBy(s => s.Nombre).Select(s => s.ToServicioDTO()).ToList();
     }
 
     public async Task<ServicioDTO> CrearUno(int negocioId, CrearServicioDTO dto, int usuarioId)
@@ -41,7 +42,7 @@ public class ServiciosService
         };
 
         await _repo.CrearUno(servicio);
-        return ServicioDTO.DesdeModelo(servicio);
+        return servicio.ToServicioDTO();
     }
 
     public async Task<ServicioDTO> ActualizarUno(int id, ActualizarServicioDTO dto, int usuarioId)
@@ -52,18 +53,11 @@ public class ServiciosService
         if (dto.Descripcion != null) servicio.Descripcion = dto.Descripcion.Trim();
         if (dto.DuracionMinutos != null) servicio.DuracionMinutos = dto.DuracionMinutos.Value;
         if (dto.Precio != null) servicio.Precio = dto.Precio.Value;
+        // Baja / alta logica: los turnos ya tomados se conservan
+        if (dto.IsActivo != null) servicio.IsActivo = (bool)dto.IsActivo;
 
         await _repo.Guardar();
-        return ServicioDTO.DesdeModelo(servicio);
-    }
-
-    // Baja / alta logica: los turnos ya tomados se conservan
-    public async Task<ServicioDTO> CambiarEstado(int id, bool isActivo, int usuarioId)
-    {
-        var servicio = await ObtenerEntidadPropia(id, usuarioId);
-        servicio.IsActivo = isActivo;
-        await _repo.Guardar();
-        return ServicioDTO.DesdeModelo(servicio);
+        return servicio.ToServicioDTO();
     }
 
     private async Task<Servicio> ObtenerEntidadPropia(int id, int usuarioId)

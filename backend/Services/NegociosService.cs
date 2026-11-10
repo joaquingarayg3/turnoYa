@@ -1,5 +1,6 @@
 using System.Net;
 using backend.Dtos.Negocio;
+using backend.Mapping;
 using backend.Models;
 using backend.Repositories;
 using backend.Utils.Respuestas;
@@ -20,13 +21,13 @@ public class NegociosService
     public async Task<List<NegocioDTO>> ObtenerMios(int usuarioId)
     {
         var lista = await _repo.ObtenerTodos(n => n.UsuarioId == usuarioId, includes: [n => n.Servicios]);
-        return lista.OrderBy(n => n.Nombre).Select(n => NegocioDTO.DesdeModelo(n)).ToList();
+        return lista.OrderBy(n => n.Nombre).Select(n => n.ToNegocioDTO()).ToList();
     }
 
     public async Task<NegocioDTO> ObtenerPropioPorId(int id, int usuarioId)
     {
         var negocio = await ObtenerEntidadPropia(id, usuarioId, incluirServicios: true);
-        return NegocioDTO.DesdeModelo(negocio);
+        return negocio.ToNegocioDTO();
     }
 
     public async Task<NegocioDTO> CrearUno(CrearNegocioDTO dto, int usuarioId)
@@ -46,7 +47,7 @@ public class NegociosService
         };
 
         await _repo.CrearUno(negocio);
-        return NegocioDTO.DesdeModelo(negocio);
+        return negocio.ToNegocioDTO();
     }
 
     public async Task<NegocioDTO> ActualizarUno(int id, ActualizarNegocioDTO dto, int usuarioId)
@@ -61,18 +62,11 @@ public class NegociosService
         if (dto.IntervaloTurnosMinutos != null) negocio.IntervaloTurnosMinutos = dto.IntervaloTurnosMinutos;
         if (dto.DiasMaxAnticipacion != null) negocio.DiasMaxAnticipacion = dto.DiasMaxAnticipacion;
         if (dto.HorasToleranciaCancelacion != null) negocio.HorasToleranciaCancelacion = dto.HorasToleranciaCancelacion;
+        // Baja / alta logica: no se borra para no perder los turnos
+        if (dto.IsActivo != null) negocio.IsActivo = (bool)dto.IsActivo;
 
         await _repo.Guardar();
-        return NegocioDTO.DesdeModelo(negocio);
-    }
-
-    // Baja / alta logica: no se borra para no perder los turnos
-    public async Task<NegocioDTO> CambiarEstado(int id, bool isActivo, int usuarioId)
-    {
-        var negocio = await ObtenerEntidadPropia(id, usuarioId);
-        negocio.IsActivo = isActivo;
-        await _repo.Guardar();
-        return NegocioDTO.DesdeModelo(negocio);
+        return negocio.ToNegocioDTO();
     }
 
     // Devuelve el negocio solo si existe (404) y es del usuario (403).

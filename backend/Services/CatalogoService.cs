@@ -1,5 +1,6 @@
 using System.Net;
 using backend.Dtos.Negocio;
+using backend.Mapping;
 using backend.Models;
 using backend.Repositories;
 using backend.Utils.Respuestas;
@@ -31,7 +32,7 @@ public class CatalogoService
             includes: [n => n.Servicios]
         );
 
-        return lista.OrderBy(n => n.Nombre).Select(n => NegocioDTO.DesdeModelo(n, true)).ToList();
+        return lista.OrderBy(n => n.Nombre).Select(n => n.ToNegocioDTO(true)).ToList();
     }
 
     public async Task<NegocioDTO> ObtenerPorId(int id)
@@ -41,7 +42,7 @@ public class CatalogoService
         {
             throw new RespuestaError("El negocio no existe o no esta disponible", HttpStatusCode.NotFound);
         }
-        return NegocioDTO.DesdeModelo(negocio, true);
+        return negocio.ToNegocioDTO(true);
     }
 
     // Rubros distintos de los negocios activos, para el filtro del front

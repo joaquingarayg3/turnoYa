@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using backend.Dtos.Auth;
 using backend.Dtos.Usuario;
 using backend.Enums;
+using backend.Mapping;
 using backend.Services;
 using backend.Utils.Extensions;
 using backend.Utils.Respuestas;
@@ -79,7 +80,7 @@ public class AuthController : ControllerBase
         {
             int id = User.ObtenerUsuarioId();
             var usuario = await _usuarioService.ObtenerUnoPorId(id);
-            var exito = new RespuestaExito("Usuario actual", HttpStatusCode.OK, UsuarioDTO.DesdeModelo(usuario));
+            var exito = new RespuestaExito("Usuario actual", HttpStatusCode.OK, usuario.ToUsuarioDTO());
             return StatusCode((int)exito.CodigoEstado, exito.Res);
         }
         catch (RespuestaError error)

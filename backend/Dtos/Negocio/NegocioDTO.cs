@@ -24,25 +24,4 @@ public class NegocioDTO
     public const int INTERVALO_DEFECTO = 30;
     public const int DIAS_DEFECTO = 30;
     public const int TOLERANCIA_DEFECTO = 2;
-
-    // soloServiciosActivos = true para el catalogo publico
-    public static NegocioDTO DesdeModelo(Models.Negocio n, bool soloServiciosActivos = false) => new()
-    {
-        Id = n.Id,
-        UsuarioId = n.UsuarioId,
-        Nombre = n.Nombre,
-        Descripcion = n.Descripcion,
-        Rubro = n.Rubro,
-        Direccion = n.Direccion,
-        Telefono = n.Telefono,
-        IsActivo = n.IsActivo,
-        IntervaloTurnosMinutos = n.IntervaloTurnosMinutos ?? INTERVALO_DEFECTO,
-        DiasMaxAnticipacion = n.DiasMaxAnticipacion ?? DIAS_DEFECTO,
-        HorasToleranciaCancelacion = n.HorasToleranciaCancelacion ?? TOLERANCIA_DEFECTO,
-        Servicios = n.Servicios
-            .Where(s => !soloServiciosActivos || s.IsActivo)
-            .OrderBy(s => s.Nombre)
-            .Select(ServicioDTO.DesdeModelo)
-            .ToList()
-    };
 }

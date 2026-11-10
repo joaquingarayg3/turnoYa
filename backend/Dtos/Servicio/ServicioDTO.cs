@@ -9,15 +9,4 @@ public class ServicioDTO
     public int DuracionMinutos { get; set; }
     public decimal Precio { get; set; }
     public bool IsActivo { get; set; }
-
-    public static ServicioDTO DesdeModelo(Models.Servicio s) => new()
-    {
-        Id = s.Id,
-        NegocioId = s.NegocioId,
-        Nombre = s.Nombre,
-        Descripcion = s.Descripcion,
-        DuracionMinutos = s.DuracionMinutos,
-        Precio = s.Precio,
-        IsActivo = s.IsActivo
-    };
 }

@@ -10,15 +10,4 @@ public class UsuarioDTO
     public string? Telefono { get; set; }
     public DateTime FechaRegistro { get; set; }
     public List<string> Roles { get; set; } = new();
-
-    public static UsuarioDTO DesdeModelo(Models.Usuario u) => new()
-    {
-        Id = u.Id,
-        Nombre = u.Nombre,
-        Apellido = u.Apellido,
-        Email = u.Email,
-        Telefono = u.Telefono,
-        FechaRegistro = u.FechaRegistro,
-        Roles = u.Roles.Select(r => r.Nombre).ToList()
-    };
 }

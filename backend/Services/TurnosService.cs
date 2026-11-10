@@ -2,6 +2,7 @@ using System.Net;
 using backend.Dtos.Negocio;
 using backend.Dtos.Turno;
 using backend.Enums;
+using backend.Mapping;
 using backend.Models;
 using backend.Repositories;
 using backend.Utils.Respuestas;
@@ -98,7 +99,7 @@ public class TurnosService
         };
 
         await _repo.CrearUno(turno);
-        return TurnoDTO.DesdeModelo(await ObtenerConDetalle(turno.Id));
+        return (await ObtenerConDetalle(turno.Id)).ToTurnoDTO();
     }
 
     // Turnos del cliente logueado, los mas nuevos primero
@@ -108,7 +109,7 @@ public class TurnosService
             t => t.ClienteId == clienteId,
             includes: [t => t.Servicio.Negocio, t => t.Cliente]
         );
-        return lista.OrderByDescending(t => t.FechaHoraInicio).Select(TurnoDTO.DesdeModelo).ToList();
+        return lista.OrderByDescending(t => t.FechaHoraInicio).Select(t => t.ToTurnoDTO()).ToList();
     }
 
     // Agenda del negocio: solo su dueño. fecha es opcional (filtra un dia)
@@ -134,7 +135,7 @@ public class TurnosService
             );
         }
 
-        return lista.OrderBy(t => t.FechaHoraInicio).Select(TurnoDTO.DesdeModelo).ToList();
+        return lista.OrderBy(t => t.FechaHoraInicio).Select(t => t.ToTurnoDTO()).ToList();
     }
 
     // Regla 1: solo el dueño confirma, y solo turnos pendientes que no empezaron
@@ -157,7 +158,7 @@ public class TurnosService
 
         turno.Estado = EstadoTurno.Confirmado;
         await _repo.Guardar();
-        return TurnoDTO.DesdeModelo(turno);
+        return turno.ToTurnoDTO();
     }
 
     // Regla 5: el cliente cancela hasta N horas antes; el dueño, siempre
@@ -194,7 +195,7 @@ public class TurnosService
 
         turno.Estado = EstadoTurno.Cancelado;
         await _repo.Guardar();
-        return TurnoDTO.DesdeModelo(turno);
+        return turno.ToTurnoDTO();
     }
 
     private async Task<Turno> ObtenerConDetalle(int id)
