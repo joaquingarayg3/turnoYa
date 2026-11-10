@@ -22,6 +22,9 @@ public class ActualizarNegocioDTO
     [MaxLength(30, ErrorMessage = "Maximo 30 caracteres")]
     public string? Telefono { get; set; }
 
+    // Baja / alta logica: false = el negocio deja de verse en el catalogo
+    public bool? IsActivo { get; set; }
+
     [Range(5, 240, ErrorMessage = "El intervalo debe estar entre 5 y 240 minutos")]
     public int? IntervaloTurnosMinutos { get; set; }
 

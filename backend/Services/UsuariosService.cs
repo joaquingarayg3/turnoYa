@@ -1,6 +1,7 @@
 using System.Net;
 using backend.Dtos.Usuario;
 using backend.Enums;
+using backend.Mapping;
 using backend.Models;
 using backend.Repositories;
 using backend.Utils.Respuestas;
@@ -23,7 +24,7 @@ public class UsuariosService
     public async Task<List<UsuarioDTO>> ObtenerTodos()
     {
         var lista = await _repo.ObtenerTodos(includes: [u => u.Roles]);
-        return lista.Select(UsuarioDTO.DesdeModelo).ToList();
+        return lista.Select(u => u.ToUsuarioDTO()).ToList();
     }
 
     public async Task<Usuario> ObtenerUnoPorId(int id)
@@ -66,7 +67,7 @@ public class UsuariosService
         };
 
         await _repo.CrearUno(usuario);
-        return UsuarioDTO.DesdeModelo(usuario);
+        return usuario.ToUsuarioDTO();
     }
 
     public async Task<UsuarioDTO> ActualizarRolesPorId(int id, ActualizarRolesDTO dto)
@@ -75,6 +76,6 @@ public class UsuariosService
         var roles = await _rolesService.ObtenerPorIds(dto.RolesIds);
         usuario.Roles = roles;
         await _repo.ActualizarUno(usuario);
-        return UsuarioDTO.DesdeModelo(usuario);
+        return usuario.ToUsuarioDTO();
     }
 }

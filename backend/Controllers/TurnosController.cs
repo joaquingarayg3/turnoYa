@@ -89,8 +89,8 @@ public class TurnosController : ControllerBase
         }
     }
 
-    // PATCH api/turnos/{id}/confirmar  (solo el dueño del negocio)
-    [HttpPatch("turnos/{id}/confirmar")]
+    // PUT api/turnos/{id}/confirmar  (solo el dueño del negocio)
+    [HttpPut("turnos/{id}/confirmar")]
     [ProducesResponseType(typeof(Respuesta), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Respuesta), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Respuesta), StatusCodes.Status403Forbidden)]
@@ -113,8 +113,8 @@ public class TurnosController : ControllerBase
         }
     }
 
-    // PATCH api/turnos/{id}/cancelar
-    [HttpPatch("turnos/{id}/cancelar")]
+    // PUT api/turnos/{id}/cancelar
+    [HttpPut("turnos/{id}/cancelar")]
     [ProducesResponseType(typeof(Respuesta), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Respuesta), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Respuesta), StatusCodes.Status403Forbidden)]

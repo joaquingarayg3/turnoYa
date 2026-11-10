@@ -56,10 +56,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// CORS: el front de Vite corre en otro puerto
+// CORS: el front de Vite corre en otro origen (teoria, capitulo 7)
 builder.Services.AddCors(opt =>
 {
-    opt.AddPolicy("front", p => p
+    opt.AddPolicy("Vite", p => p
         .WithOrigins("http://localhost:5173")
         .AllowAnyHeader()
         .AllowAnyMethod());
@@ -96,13 +96,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
+// Aplica las migraciones pendientes al arrancar (teoria, capitulo 4).
+// Quien clona el repo solo ejecuta la API: la base se crea y actualiza sola.
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseCors("front");
+app.UseCors("Vite");
 
 app.UseHttpsRedirection();
 

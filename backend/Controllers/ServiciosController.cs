@@ -1,7 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using backend.Dtos.Comun;
 using backend.Dtos.Servicio;
 using backend.Services;
 using backend.Utils.Extensions;
@@ -81,30 +80,6 @@ public class ServiciosController : ControllerBase
         {
             var servicio = await _service.ActualizarUno(id, dto, User.ObtenerUsuarioId());
             var exito = new RespuestaExito("Servicio actualizado!", HttpStatusCode.OK, servicio);
-            return StatusCode((int)exito.CodigoEstado, exito.Res);
-        }
-        catch (RespuestaError error)
-        {
-            return StatusCode((int)error.CodigoEstado, error.Res);
-        }
-        catch (Exception error)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new Respuesta(error.Message));
-        }
-    }
-
-    // PATCH api/servicios/{id}/estado  body: { "isActivo": false }
-    [HttpPatch("servicios/{id}/estado")]
-    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Respuesta>> CambiarEstado(int id, [FromBody] CambiarEstadoDTO dto)
-    {
-        try
-        {
-            var servicio = await _service.CambiarEstado(id, dto.IsActivo!.Value, User.ObtenerUsuarioId());
-            string msg = servicio.IsActivo ? "Servicio activado!" : "Servicio desactivado!";
-            var exito = new RespuestaExito(msg, HttpStatusCode.OK, servicio);
             return StatusCode((int)exito.CodigoEstado, exito.Res);
         }
         catch (RespuestaError error)

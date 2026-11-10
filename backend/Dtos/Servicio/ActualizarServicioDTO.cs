@@ -17,4 +17,7 @@ public class ActualizarServicioDTO
 
     [Range(0.0, 9999999.0, ErrorMessage = "El precio no puede ser negativo")]
     public decimal? Precio { get; set; }
+
+    // Baja / alta logica: false = el servicio no se puede reservar
+    public bool? IsActivo { get; set; }
 }

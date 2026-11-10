@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using backend.Dtos.Auth;
 using backend.Dtos.Usuario;
+using backend.Mapping;
 using backend.Models;
 using backend.Utils.Respuestas;
 
@@ -44,7 +45,7 @@ public class AuthService : IAuthService
         return new LoginRespuestaDTO()
         {
             Token = GenerarJwtToken(usuario),
-            Usuario = UsuarioDTO.DesdeModelo(usuario)
+            Usuario = usuario.ToUsuarioDTO()
         };
     }
 

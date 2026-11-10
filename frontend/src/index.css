@@ -1,1 +1,27 @@
 @import "tailwindcss";
+
+/*
+  Marca TurnoYa (ver docs/MARCA.md).
+  Cada color genera sus clases: bg-turno, text-turno, border-borde, text-ya-texto, etc.
+*/
+@theme {
+  --font-sans: "Inter", system-ui, Arial, sans-serif;
+  --font-display: "Space Grotesk", system-ui, Arial, sans-serif;
+
+  --color-turno: #14213D;      /* Azul Turno: textos, isotipo, fondos oscuros */
+  --color-ya: #E2700B;         /* Naranja Ya: acento, botones principales, el "Ya" */
+  --color-ya-texto: #B35A00;   /* Naranja texto: links y textos chicos en naranja (4,8:1) */
+  --color-pizarra: #4A5468;    /* Gris pizarra: texto secundario */
+  --color-fondo: #F4F6FA;      /* Fondo claro: fondo de pantalla y tarjetas */
+  --color-borde: #DDE2EC;      /* Bordes y separadores */
+}
+
+@layer base {
+  body {
+    @apply bg-fondo text-turno font-sans antialiased;
+  }
+
+  h1, h2, h3 {
+    @apply font-display tracking-tight;
+  }
+}
