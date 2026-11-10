@@ -3,6 +3,7 @@ import { Route, Switch } from "wouter"
 import NavBar from "./components/nav-bar"
 import Footer from "./components/footer"
 import Cargando from "./components/cargando"
+import RutaPrivada from "./components/ruta-privada"
 
 // Lazy loading (modulo 04): cada pagina se descarga recien cuando se navega a ella.
 // Las paginas tienen que exportarse con "export default".
@@ -27,7 +28,7 @@ const NoEncontrado = lazy(() => import("./pages/no-encontrado"))
 // Mapa de rutas de toda la app.
 // <Switch> muestra solo la PRIMERA ruta que coincide: las fijas (/nuevo) van antes que las de parametro (/:id).
 // Cada track completa SOLO sus paginas; si necesita una ruta nueva, la agrega aca avisando al grupo.
-// En D3 las rutas privadas se protegen con la sesion del contexto de auth.
+// Las rutas que requieren login van envueltas en <RutaPrivada>: sin sesion, mandan al login.
 function App() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -43,14 +44,26 @@ function App() {
             <Route path="/registro" component={Registro} />                      {/* D4 */}
 
             {/* Cliente (requieren login) */}
-            <Route path="/negocios/:id/reservar" component={Reservar} />         {/* C2 */}
-            <Route path="/mis-turnos" component={MisTurnos} />                   {/* C3 */}
+            <Route path="/negocios/:id/reservar">                                {/* C2 */}
+              <RutaPrivada><Reservar /></RutaPrivada>
+            </Route>
+            <Route path="/mis-turnos">                                           {/* C3 */}
+              <RutaPrivada><MisTurnos /></RutaPrivada>
+            </Route>
 
             {/* Comerciante (requieren login) */}
-            <Route path="/mis-negocios" component={MisNegocios} />               {/* A1 */}
-            <Route path="/mis-negocios/nuevo" component={FormNegocio} />         {/* A2 */}
-            <Route path="/mis-negocios/:id/editar" component={FormNegocio} />    {/* A2 */}
-            <Route path="/mis-negocios/:id" component={MiNegocio} />             {/* A4 + B1 + B3 */}
+            <Route path="/mis-negocios">                                         {/* A1 */}
+              <RutaPrivada><MisNegocios /></RutaPrivada>
+            </Route>
+            <Route path="/mis-negocios/nuevo">                                   {/* A2 */}
+              <RutaPrivada><FormNegocio /></RutaPrivada>
+            </Route>
+            <Route path="/mis-negocios/:id/editar">                              {/* A2 */}
+              <RutaPrivada><FormNegocio /></RutaPrivada>
+            </Route>
+            <Route path="/mis-negocios/:id">                                     {/* A4 + B1 + B3 */}
+              <RutaPrivada><MiNegocio /></RutaPrivada>
+            </Route>
 
             {/* Sin path = cualquier otra direccion */}
             <Route component={NoEncontrado} />

@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter"
+import { useAuth } from "../hooks/use-auth"
 import Logo from "./logo"
 
 // Estilo de los links del menu: resalta el de la pagina actual
@@ -13,10 +14,16 @@ const claseSelector = (activo) =>
   }`
 
 export default function NavBar() {
-  const [location] = useLocation()
+  const [location, navegar] = useLocation()
+  const { usuario, logout } = useAuth()
 
   // El panel comerciante es todo lo que cuelga de /mis-negocios; el resto es panel cliente
   const enComerciante = location.startsWith("/mis-negocios")
+
+  const salir = () => {
+    logout()
+    navegar("/")
+  }
 
   return (
     <header className="bg-white border-b border-borde">
@@ -43,15 +50,32 @@ export default function NavBar() {
           )}
         </div>
 
-        {/* Sesion: en D3 se reemplaza por el nombre del usuario y "Salir" cuando hay login */}
+        {/* Sesion */}
         <div className="ml-auto flex items-center gap-2">
-          <Link href="/login" className={claseLink(location === "/login")}>Ingresar</Link>
-          <Link
-            href="/registro"
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-ya text-turno hover:brightness-95 transition"
-          >
-            Crear cuenta
-          </Link>
+          {usuario ? (
+            <>
+              <span className="text-sm text-pizarra">
+                Hola, <span className="font-semibold text-turno">{usuario.nombre}</span>
+              </span>
+              <button
+                type="button"
+                onClick={salir}
+                className="px-3 py-2 rounded-lg text-sm font-medium border border-borde text-turno hover:bg-fondo"
+              >
+                Salir
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className={claseLink(location === "/login")}>Ingresar</Link>
+              <Link
+                href="/registro"
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-ya text-turno hover:brightness-95 transition"
+              >
+                Crear cuenta
+              </Link>
+            </>
+          )}
         </div>
       </nav>
     </header>
