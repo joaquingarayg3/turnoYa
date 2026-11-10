@@ -67,15 +67,9 @@ Ese archivo está en el `.gitignore`: cada uno tiene el suyo y no se pisan entre
 
 > En JSON la barra invertida se escribe doble: `PC\\SQLEXPRESS`. Escribir el nombre de la instancia dos veces es un error común.
 
-### 2. Crear la base de datos
+### 2. Base de datos
 
-En Visual Studio: **Herramientas → Administrador de paquetes NuGet → Consola del Administrador de paquetes**, con **Proyecto predeterminado = `backend`**:
-
-```
-Update-Database
-```
-
-Eso crea la base `turnoya` con todas las tablas y los datos iniciales (roles y usuario admin). **No hace falta correr `Add-Migration`**: las migraciones ya están en el repo.
+No hace falta correr nada: al ejecutar el backend se aplican solas las migraciones pendientes (`Database.Migrate()` en `Program.cs`) y se crea la base `turnoya` con sus tablas y datos iniciales (roles y usuario admin).
 
 ### 3. Ejecutar el backend
 
@@ -118,7 +112,7 @@ Queda en `http://localhost:5173`. El backend ya tiene CORS habilitado para ese o
 - [x] Modelo de datos completo (7 tablas) con migración inicial
 - [x] Registro, login con JWT, usuario actual y gestión de roles
 - [x] Swagger con autenticación
-- [x] API de negocios y servicios (panel comerciante, con validación de dueño)
+- [x] API de negocios y servicios (panel comerciante, con validación de dueño y baja lógica)
 - [x] API de turnos: reservar, mis turnos, cancelar y agenda del negocio
 - [x] API de catálogo público con búsqueda y filtro por rubro
 - [ ] Frontend: rutas, sesión, login y registro

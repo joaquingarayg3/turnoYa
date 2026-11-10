@@ -46,6 +46,17 @@ Ejemplo: `POST /api/auth/register`
    - devuelve un `UsuarioDTO` (sin la clave).
 3. El controller lo envuelve en `RespuestaExito(201)` y responde.
 
+### Referencias que seguimos
+
+| Tema | De dónde sale |
+|---|---|
+| Capas, DI, DTOs, migraciones, JWT, CORS, Swagger | Teoría de la cátedra: [`02-backend/guia`](https://github.com/atarico/UNT-programacion4/tree/main/02-backend/guia) |
+| Repositorio genérico con `includes`, `Respuesta` / `RespuestaExito` / `RespuestaError`, `try/catch` en los controllers, baja lógica con `IsActivo` en el `PUT` | Práctica de clase: `panaderiaApi` |
+| Mapeo entidad → DTO en `Mapping/Mapper.cs` | Teoría, capítulo 3 |
+| Migraciones aplicadas al arrancar (`Database.Migrate()`) | Teoría, capítulo 4 |
+
+**Manejo de errores.** Seguimos la práctica de la panadería: el service lanza `RespuestaError` con su código HTTP y cada acción del controller lo atrapa con `try/catch`. La teoría (capítulo 6) muestra la alternativa de un filtro global (`GlobalExceptionFilter`) que hace lo mismo sin repetir el `try/catch`: es un buen tema para comentar en la defensa.
+
 ---
 
 ## 2. Carpetas y archivos
@@ -64,6 +75,8 @@ backend/
 ├── Dtos/                      Objetos de entrada y salida de la API
 ├── Repositories/
 │   └── Repository.cs          Repositorio genérico IRepository<T>
+├── Mapping/
+│   └── Mapper.cs              Entidad → DTO con métodos de extensión (ToNegocioDTO, ...)
 ├── Services/                  Lógica de negocio
 ├── Controllers/               Endpoints HTTP
 ├── Utils/
@@ -277,16 +290,14 @@ if (negocio.UsuarioId != usuarioId)
 | GET | `/api/negocios/mios` | Logueado | — | Mis negocios (con sus servicios) |
 | GET | `/api/negocios/{id}` | Dueño | — | `NegocioDTO` |
 | POST | `/api/negocios` | Logueado | `CrearNegocioDTO` | `NegocioDTO` (201) |
-| PUT | `/api/negocios/{id}` | Dueño | `ActualizarNegocioDTO` (campos opcionales) | `NegocioDTO` |
-| PATCH | `/api/negocios/{id}/estado` | Dueño | `{ "isActivo": false }` | `NegocioDTO` |
+| PUT | `/api/negocios/{id}` | Dueño | `ActualizarNegocioDTO` (campos opcionales; `isActivo: false` = baja lógica) | `NegocioDTO` |
 | GET | `/api/negocios/{negocioId}/servicios` | Dueño | — | Lista de `ServicioDTO` (activos e inactivos) |
 | POST | `/api/negocios/{negocioId}/servicios` | Dueño | `CrearServicioDTO` | `ServicioDTO` (201) |
-| PUT | `/api/servicios/{id}` | Dueño | `ActualizarServicioDTO` (campos opcionales) | `ServicioDTO` |
-| PATCH | `/api/servicios/{id}/estado` | Dueño | `{ "isActivo": false }` | `ServicioDTO` |
+| PUT | `/api/servicios/{id}` | Dueño | `ActualizarServicioDTO` (campos opcionales; `isActivo: false` = baja lógica) | `ServicioDTO` |
 | POST | `/api/turnos` | Logueado | `CrearTurnoDTO` | `TurnoDTO` (201) |
 | GET | `/api/turnos/mios` | Logueado | — | Mis turnos, los más nuevos primero |
-| PATCH | `/api/turnos/{id}/confirmar` | Dueño | — | `TurnoDTO` (pasa de Pendiente a Confirmado) |
-| PATCH | `/api/turnos/{id}/cancelar` | Cliente del turno o dueño del negocio | — | `TurnoDTO` |
+| PUT | `/api/turnos/{id}/confirmar` | Dueño | — | `TurnoDTO` (pasa de Pendiente a Confirmado) |
+| PUT | `/api/turnos/{id}/cancelar` | Cliente del turno o dueño del negocio | — | `TurnoDTO` |
 | GET | `/api/negocios/{negocioId}/turnos?fecha=2026-11-12` | Dueño | — | Agenda del negocio (`fecha` opcional) |
 | GET | `/api/catalogo/negocios?busqueda=&rubro=` | Público | — | Negocios activos con sus servicios activos |
 | GET | `/api/catalogo/negocios/{id}` | Público | — | Detalle de un negocio activo |
@@ -298,7 +309,7 @@ if (negocio.UsuarioId != usuarioId)
 
 | # | Regla | Dónde se configura |
 |---|---|---|
-| 1 | Al reservar, el turno queda `Pendiente`; el dueño lo pasa a `Confirmado` | `PATCH /api/turnos/{id}/confirmar` |
+| 1 | Al reservar, el turno queda `Pendiente`; el dueño lo pasa a `Confirmado` | `PUT /api/turnos/{id}/confirmar` |
 | 2 | Las fechas viajan en **hora local, sin zona horaria**: `"2026-11-12T10:00:00"` (sin `Z`) | — |
 | 3 | El turno empieza en la grilla del negocio: cada `IntervaloTurnosMinutos` desde las 00:00 (con 30: 9:00, 9:30, 10:00…) | Negocio, por defecto 30 |
 | 4 | Ni en el pasado ni más allá de `DiasMaxAnticipacion` días | Negocio, por defecto 30 |
@@ -373,11 +384,11 @@ Receta usando **Negocios** como ejemplo. Vale igual para Servicios, Horarios y T
 2. **DTOs** en `Dtos/Negocio/`:
    - `CrearNegocioDTO`: campos obligatorios con `[Required]`, `[MinLength]`, `[MaxLength]`.
    - `ActualizarNegocioDTO`: todos los campos opcionales (`string?`, `bool?`). Solo se actualiza lo que llega.
-   - `NegocioDTO`: lo que se devuelve, con un `static DesdeModelo(...)` como el de `UsuarioDTO`.
+   - `NegocioDTO`: lo que se devuelve. Su mapeo va en `Mapping/Mapper.cs` (`negocio.ToNegocioDTO()`).
 3. **Service** en `Services/NegociosService.cs`:
    - recibe `IRepository<Negocio>` por constructor,
    - métodos `ObtenerTodos`, `ObtenerUnoPorId` (con `404` si no existe), `CrearUno(dto, usuarioId)`, `ActualizarUno(id, dto, usuarioId)`, `EliminarUno(id, usuarioId)`,
-   - en editar y borrar, validar que `negocio.UsuarioId == usuarioId` (si no, `403`).
+   - en editar, validar que `negocio.UsuarioId == usuarioId` (si no, `403`). La baja es lógica: `IsActivo` en el DTO de actualización.
 4. **Registrar el service** en `Program.cs`:
    ```csharp
    builder.Services.AddScoped<NegociosService>();
@@ -401,7 +412,7 @@ Las migraciones son el historial de cambios de la base. Viven en `Migrations/` y
 
 | Situación | Comando (Consola del Administrador de paquetes, proyecto `backend`) |
 |---|---|
-| Recién cloné el repo o hice pull de una migración nueva | `Update-Database` |
+| Recién cloné el repo o hice pull de una migración nueva | Nada: la API aplica las migraciones al arrancar. `Update-Database` también sirve |
 | Cambié un modelo o el `AppDbContext` | `Add-Migration NombreDescriptivo` y luego `Update-Database` |
 | Generé una migración y todavía no la apliqué ni la subí | `Remove-Migration` |
 | Quiero volver la base a una migración anterior | `Update-Database NombreMigracion` |
