@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Link, useParams } from "wouter"
-import Pendiente from "../../components/pendiente"
 import ServiciosNegocio from "../../components/comerciante/servicios-negocio"
+import AgendaNegocio from "../../components/comerciante/agenda-negocio"
 
 // A4 · GET /api/negocios/{id}
 // Pestañas donde el track B monta sus componentes:
@@ -32,10 +32,8 @@ export default function MiNegocio() {
       {pestana === 'servicios' && (
         <ServiciosNegocio negocioId={id} />
       )}
-      {pestana === 'agenda' && (
-        <Pendiente titulo="Agenda" tarea="B3 · Agenda del negocio">
-          Turnos del día, con Confirmar y Cancelar.
-        </Pendiente>
+           {pestana === 'agenda' && (
+        <AgendaNegocio negocioId={id} />
       )}
     </section>
   )
