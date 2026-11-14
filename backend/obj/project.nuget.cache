@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "/tVT5hyj5aI=",
+  "dgSpecHash": "ZDwz+rWCXJY=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\turnoYa.csproj",
+  "projectFilePath": "c:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\backend\\backend.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Compumar\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.19\\microsoft.aspnetcore.openapi.9.0.19.nupkg.sha512",
     "C:\\Users\\Compumar\\.nuget\\packages\\microsoft.extensions.apidescription.server\\9.0.0\\microsoft.extensions.apidescription.server.9.0.0.nupkg.sha512",
@@ -16,5 +16,15 @@
     "C:\\Users\\Compumar\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.19\\microsoft.aspnetcore.app.ref.9.0.19.nupkg.sha512",
     "C:\\Users\\Compumar\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\9.0.19\\microsoft.netcore.app.host.win-x64.9.0.19.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Problem reading the cache file c:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\backend\\obj\\project.nuget.cache : '<' is an invalid start of a property name. Expected a '\"'. Path: $ | LineNumber: 2 | BytePositionInLine: 0.",
+      "projectPath": "c:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\backend\\backend.csproj",
+      "warningLevel": 1,
+      "filePath": "c:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\backend\\backend.csproj",
+      "targetGraphs": []
+    }
+  ]
 }

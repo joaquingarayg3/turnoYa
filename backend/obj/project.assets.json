@@ -484,11 +484,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\turnoYa.csproj",
-      "projectName": "turnoYa",
-      "projectPath": "C:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\turnoYa.csproj",
+      "projectUniqueName": "c:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\backend\\backend.csproj",
+      "projectName": "backend",
+      "projectPath": "c:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\backend\\backend.csproj",
       "packagesPath": "C:\\Users\\Compumar\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\obj\\",
+      "outputPath": "c:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\backend\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -578,5 +578,13 @@
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Problem reading the cache file c:\\Users\\Compumar\\Desktop\\dev\\turnoYa\\backend\\obj\\project.nuget.cache : '<' is an invalid start of a property name. Expected a '\"'. Path: $ | LineNumber: 2 | BytePositionInLine: 0."
+    }
+  ]
 }
