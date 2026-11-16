@@ -36,7 +36,7 @@ function TarjetaTurno({ turno, puedeCancelar, cancelando, onCancelar }) {
           {turno.negocioNombre}
           {turno.negocioDireccion && ` · ${turno.negocioDireccion}`}
         </p>
-        <p className="mt-1 capitalize">
+        <p className="mt-1 first-letter:uppercase">
           {formatearFechaHora(turno.fechaHoraInicio)}
         </p>
         <p className="text-sm text-pizarra">

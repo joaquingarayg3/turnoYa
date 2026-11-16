@@ -26,6 +26,7 @@ export function formatearFechaHora(iso) {
     month: "long",
     hour: "2-digit",
     minute: "2-digit",
+    hourCycle: "h23", // 24 h (15:00), como en la agenda del comerciante
   });
 }
 
@@ -34,6 +35,7 @@ export function formatearHora(iso) {
   return new Date(iso).toLocaleTimeString("es-AR", {
     hour: "2-digit",
     minute: "2-digit",
+    hourCycle: "h23",
   });
 }
 

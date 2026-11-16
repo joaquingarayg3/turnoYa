@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useLocation, useParams } from "wouter";
 import clienteAxios from "../../api/clienteAxios";
@@ -35,11 +35,11 @@ export default function Reservar() {
     register,
     handleSubmit,
     setError,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(esquemaReserva) });
 
-  const diaElegido = watch("dia"); // Se actualiza cada vez que cambia el dia
+  const diaElegido = useWatch({ control, name: "dia" }); // Se actualiza cada vez que cambia el dia
 
   useEffect(() => {
     const controlador = new AbortController(); // Para cancelar el pedido si se sale de la pagina
@@ -107,9 +107,10 @@ export default function Reservar() {
   const dias = negocio.diasMaxAnticipacion;
 
   // El input de tipo "date" usa el formato "2026-11-26": son los primeros 10 caracteres del valor de aValorInput
-  const hoy = aValorInput(new Date()).slice(0, 10);
+  const ahora = new Date();
+  const hoy = aValorInput(ahora).slice(0, 10);
   const ultimoDia = aValorInput(
-    new Date(Date.now() + dias * 24 * 60 * 60 * 1000),
+    new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + dias),
   ).slice(0, 10);
 
   // Si el dia elegido es hoy, se sacan los horarios que ya pasaron
