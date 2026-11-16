@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import clienteAxios from "../../api/clienteAxios"
+import { mensajeDeError } from "../../utils/errores"
+import Cargando from "../cargando"
 
 // Mismo orden que el enum EstadoTurno del backend (por si llega como número)
 const ESTADOS = ["Pendiente", "Confirmado", "Cancelado", "Completado"]
@@ -28,8 +30,9 @@ function nombreEstado(estado) {
   return typeof estado === "number" ? ESTADOS[estado] : estado
 }
 
+// Hora en formato de 24 h (15:00), que es el habitual en Argentina
 function hora(fechaHora) {
-  return new Date(fechaHora).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })
+  return new Date(fechaHora).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
 }
 
 export default function AgendaNegocio({ negocioId }) {
@@ -39,29 +42,32 @@ export default function AgendaNegocio({ negocioId }) {
   const [error, setError] = useState(null)
   const [errorAccion, setErrorAccion] = useState(null)
   const [procesando, setProcesando] = useState(null) // id del turno que se está confirmando/cancelando
+  // Al cambiar este numero se vuelve a pedir la agenda
+  const [recarga, setRecarga] = useState(0)
 
-  const cargarAgenda = useCallback(async () => {
-    setCargando(true)
-    setError(null)
-    try {
-      const respuesta = await clienteAxios.get(`/negocios/${negocioId}/turnos`, { params: { fecha } })
-      const lista = [...respuesta.data.datos].sort(
-        (a, b) => new Date(a.fechaHoraInicio) - new Date(b.fechaHoraInicio)
-      )
-      setTurnos(lista)
-    } catch (err) {
-      const status = err.response?.status
-      if (status === 404) setError("El negocio no existe.")
-      else if (status === 403) setError("No tenés permiso para ver la agenda de este negocio.")
-      else setError("No se pudo cargar la agenda.")
-    } finally {
-      setCargando(false)
-    }
-  }, [negocioId, fecha])
-
+  // Patron del modulo 08: la funcion async se define dentro del efecto.
+  // Se vuelve a ejecutar cuando cambia el negocio, el dia elegido o despues de una accion.
   useEffect(() => {
+    const cargarAgenda = async () => {
+      try {
+        setCargando(true)
+        const respuesta = await clienteAxios.get(`/negocios/${negocioId}/turnos`, { params: { fecha } })
+        const lista = [...respuesta.data.datos].sort(
+          (a, b) => new Date(a.fechaHoraInicio) - new Date(b.fechaHoraInicio)
+        )
+        setTurnos(lista)
+        setError(null)
+      } catch (err) {
+        const status = err.response?.status
+        if (status === 404) setError("El negocio no existe.")
+        else if (status === 403) setError("No tenés permiso para ver la agenda de este negocio.")
+        else setError(mensajeDeError(err, "No se pudo cargar la agenda."))
+      } finally {
+        setCargando(false)
+      }
+    }
     cargarAgenda()
-  }, [cargarAgenda])
+  }, [negocioId, fecha, recarga])
 
   // accion = "confirmar" o "cancelar" -> PUT /api/turnos/{id}/confirmar o /cancelar
   const cambiarEstado = async (turno, accion) => {
@@ -71,37 +77,38 @@ export default function AgendaNegocio({ negocioId }) {
     setErrorAccion(null)
     try {
       await clienteAxios.put(`/turnos/${turno.id}/${accion}`)
-      await cargarAgenda()
+      setRecarga((n) => n + 1)
     } catch (err) {
-      setErrorAccion(err.response?.data?.mensaje ?? `No se pudo ${accion} el turno.`)
+      setErrorAccion(mensajeDeError(err, `No se pudo ${accion} el turno.`))
     } finally {
       setProcesando(null)
     }
   }
 
-  const claseBoton = "text-sm px-3 py-1 rounded-lg border border-borde transition hover:bg-gray-200 disabled:opacity-50"
+  const claseBoton = "text-sm px-3 py-1 rounded-lg border border-borde transition hover:bg-fondo disabled:opacity-50"
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="text-xl font-bold">Agenda</h2>
         <div className="flex items-center gap-2">
-          <button onClick={() => setFecha(sumarDias(fecha, -1))} className={claseBoton}>←</button>
+          <button onClick={() => setFecha(sumarDias(fecha, -1))} className={claseBoton} aria-label="Día anterior">←</button>
           <input
             type="date"
             value={fecha}
             onChange={(e) => e.target.value && setFecha(e.target.value)}
             className="rounded-lg border border-borde px-3 py-1 bg-white"
+            aria-label="Fecha de la agenda"
           />
-          <button onClick={() => setFecha(sumarDias(fecha, 1))} className={claseBoton}>→</button>
+          <button onClick={() => setFecha(sumarDias(fecha, 1))} className={claseBoton} aria-label="Día siguiente">→</button>
           <button onClick={() => setFecha(formatearFecha(new Date()))} className={claseBoton}>Hoy</button>
         </div>
       </div>
 
-      {errorAccion && <p className="mb-4 text-sm text-red-600">{errorAccion}</p>}
+      {errorAccion && <p className="mb-4 text-sm text-red-700" role="alert">{errorAccion}</p>}
 
       {cargando ? (
-        <p className="text-pizarra">Cargando agenda...</p>
+        <Cargando texto="Cargando agenda..." />
       ) : error ? (
         <p className="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">{error}</p>
       ) : turnos.length === 0 ? (
@@ -137,7 +144,7 @@ export default function AgendaNegocio({ negocioId }) {
                     <button
                       onClick={() => cambiarEstado(turno, "confirmar")}
                       disabled={procesando === turno.id}
-                      className="text-sm px-3 py-1 rounded-lg bg-ya font-semibold transition hover:brightness-110 active:scale-95 disabled:opacity-50"
+                      className="text-sm px-3 py-1 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95 disabled:opacity-50"
                     >
                       Confirmar
                     </button>

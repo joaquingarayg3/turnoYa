@@ -1,111 +1,84 @@
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import clienteAxios from "../../api/clienteAxios"
-
-const FORM_VACIO = { nombre: "", descripcion: "", duracionMinutos: "", precio: "" }
-
-// Mismas reglas que CrearServicioDTO / ActualizarServicioDTO del backend
-function validar(valores) {
-  const errores = {}
-
-  const nombre = valores.nombre.trim()
-  if (nombre.length < 2) errores.nombre = "El nombre debe tener al menos 2 caracteres."
-  else if (nombre.length > 100) errores.nombre = "El nombre puede tener hasta 100 caracteres."
-
-  if (valores.descripcion.length > 500) {
-    errores.descripcion = "La descripción puede tener hasta 500 caracteres."
-  }
-
-  const duracion = Number(valores.duracionMinutos)
-  if (valores.duracionMinutos === "" || !Number.isInteger(duracion) || duracion < 5 || duracion > 480) {
-    errores.duracionMinutos = "La duración debe ser un número entero entre 5 y 480 minutos."
-  }
-
-  const precio = Number(valores.precio)
-  if (valores.precio === "" || Number.isNaN(precio) || precio < 0) {
-    errores.precio = "El precio debe ser un número mayor o igual a 0."
-  }
-
-  return errores
-}
-
-function Campo({ label, error, children }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
-      {error && <span className="block text-sm text-red-600 mt-1">{error}</span>}
-    </label>
-  )
-}
-
-const claseInput = "mt-1 w-full rounded-lg border border-borde px-3 py-2 bg-white"
+import { esquemaServicio } from "../../schemas/servicio-schemas"
+import { mensajeDeError } from "../../utils/errores"
+import Campo from "../campo"
+import Cargando from "../cargando"
 
 function FormularioServicio({ servicio, onGuardar, onCancelar }) {
-  const [valores, setValores] = useState(
-    servicio
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(esquemaServicio),
+    defaultValues: servicio
       ? {
           nombre: servicio.nombre,
           descripcion: servicio.descripcion ?? "",
-          duracionMinutos: String(servicio.duracionMinutos),
-          precio: String(servicio.precio),
+          duracionMinutos: servicio.duracionMinutos,
+          precio: servicio.precio,
         }
-      : FORM_VACIO
-  )
-  const [errores, setErrores] = useState({})
-  const [errorApi, setErrorApi] = useState(null)
-  const [guardando, setGuardando] = useState(false)
+      : { nombre: "", descripcion: "" },
+  })
 
-  const cambiar = (e) => setValores({ ...valores, [e.target.name]: e.target.value })
-
-  const enviar = async (e) => {
-    e.preventDefault()
-    const nuevosErrores = validar(valores)
-    setErrores(nuevosErrores)
-    if (Object.keys(nuevosErrores).length > 0) return
-
-    setGuardando(true)
-    setErrorApi(null)
+  const enviar = async (datos) => {
     try {
-      await onGuardar({
-        nombre: valores.nombre.trim(),
-        descripcion: valores.descripcion.trim() || null,
-        duracionMinutos: Number(valores.duracionMinutos),
-        precio: Number(valores.precio),
-      })
+      // La descripcion se manda siempre como texto: "" borra la anterior al editar
+      // (null el back lo interpreta como "no cambiar")
+      await onGuardar(datos)
     } catch (err) {
-      setErrorApi(err.response?.data?.mensaje ?? "No se pudo guardar el servicio.")
-      setGuardando(false)
+      setError("root", { message: mensajeDeError(err, "No se pudo guardar el servicio.") })
     }
   }
 
   return (
-    <form onSubmit={enviar} className="p-4 mb-6 bg-white rounded-xl border border-borde space-y-4">
+    <form onSubmit={handleSubmit(enviar)} className="p-4 mb-6 bg-white rounded-xl border border-borde space-y-4" noValidate>
       <h3 className="font-semibold">{servicio ? "Editar servicio" : "Nuevo servicio"}</h3>
 
-      <Campo label="Nombre" error={errores.nombre}>
-        <input name="nombre" value={valores.nombre} onChange={cambiar} className={claseInput} />
-      </Campo>
+      <Campo id="nombre" label="Nombre" error={errors.nombre} {...register("nombre")} />
 
-      <Campo label="Descripción (opcional)" error={errores.descripcion}>
-        <textarea name="descripcion" value={valores.descripcion} onChange={cambiar} rows={2} className={claseInput} />
-      </Campo>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Campo label="Duración (minutos)" error={errores.duracionMinutos}>
-          <input name="duracionMinutos" type="number" value={valores.duracionMinutos} onChange={cambiar} className={claseInput} />
-        </Campo>
-        <Campo label="Precio ($)" error={errores.precio}>
-          <input name="precio" type="number" step="0.01" value={valores.precio} onChange={cambiar} className={claseInput} />
-        </Campo>
+      <div>
+        <label htmlFor="descripcion" className="block text-sm font-medium mb-1">Descripción (opcional)</label>
+        <textarea
+          id="descripcion"
+          rows={2}
+          className={`w-full rounded-lg border bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ya ${
+            errors.descripcion ? "border-red-600" : "border-borde"
+          }`}
+          {...register("descripcion")}
+        />
+        {errors.descripcion && <p className="mt-1 text-sm text-red-700">{errors.descripcion.message}</p>}
       </div>
 
-      {errorApi && <p className="text-sm text-red-600">{errorApi}</p>}
+      <div className="grid grid-cols-2 gap-4">
+        <Campo
+          id="duracionMinutos"
+          label="Duración (minutos)"
+          type="number"
+          error={errors.duracionMinutos}
+          {...register("duracionMinutos", { valueAsNumber: true })}
+        />
+        <Campo
+          id="precio"
+          label="Precio ($)"
+          type="number"
+          step="0.01"
+          error={errors.precio}
+          {...register("precio", { valueAsNumber: true })}
+        />
+      </div>
 
-           <div className="flex gap-2">
-        <button type="submit" disabled={guardando} className="px-4 py-2 rounded-lg bg-ya font-semibold transition hover:brightness-110 active:brightness-90 active:scale-95 disabled:opacity-50">
-          {guardando ? "Guardando..." : "Guardar"}
+      {errors.root && <p className="text-sm text-red-700" role="alert">{errors.root.message}</p>}
+
+      <div className="flex gap-2">
+        <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95 disabled:opacity-50">
+          {isSubmitting ? "Guardando..." : "Guardar"}
         </button>
-        <button type="button" onClick={onCancelar} className="px-4 py-2 rounded-lg border border-borde transition hover:bg-gray-50">
+        <button type="button" onClick={onCancelar} className="px-4 py-2 rounded-lg border border-borde transition hover:bg-fondo">
           Cancelar
         </button>
       </div>
@@ -120,26 +93,28 @@ export default function ServiciosNegocio({ negocioId }) {
   const [errorAccion, setErrorAccion] = useState(null)
   // null = formulario cerrado, "nuevo" = crear, un servicio = editar ese servicio
   const [editando, setEditando] = useState(null)
+  // Al cambiar este numero se vuelven a pedir los servicios
+  const [recarga, setRecarga] = useState(0)
 
-  const cargarServicios = useCallback(async () => {
-    setCargando(true)
-    setError(null)
-    try {
-      const respuesta = await clienteAxios.get(`/negocios/${negocioId}/servicios`)
-      setServicios(respuesta.data.datos)
-    } catch (err) {
-      const status = err.response?.status
-      if (status === 404) setError("El negocio no existe.")
-      else if (status === 403) setError("No tenés permiso para ver este negocio.")
-      else setError("No se pudieron cargar los servicios.")
-    } finally {
-      setCargando(false)
-    }
-  }, [negocioId])
-
+  // Patron del modulo 08: la funcion async se define dentro del efecto
   useEffect(() => {
+    const cargarServicios = async () => {
+      try {
+        setCargando(true)
+        const respuesta = await clienteAxios.get(`/negocios/${negocioId}/servicios`)
+        setServicios(respuesta.data.datos)
+        setError(null)
+      } catch (err) {
+        const status = err.response?.status
+        if (status === 404) setError("El negocio no existe.")
+        else if (status === 403) setError("No tenés permiso para ver este negocio.")
+        else setError(mensajeDeError(err, "No se pudieron cargar los servicios."))
+      } finally {
+        setCargando(false)
+      }
+    }
     cargarServicios()
-  }, [cargarServicios])
+  }, [negocioId, recarga])
 
   // B1: crear (POST) o editar (PUT) según lo que se esté editando
   const guardarServicio = async (datos) => {
@@ -149,7 +124,7 @@ export default function ServiciosNegocio({ negocioId }) {
       await clienteAxios.put(`/servicios/${editando.id}`, datos)
     }
     setEditando(null)
-    cargarServicios()
+    setRecarga((n) => n + 1)
   }
 
   // B2: activar / desactivar con el mismo PUT, mandando solo isActivo
@@ -157,13 +132,13 @@ export default function ServiciosNegocio({ negocioId }) {
     setErrorAccion(null)
     try {
       await clienteAxios.put(`/servicios/${servicio.id}`, { isActivo: !servicio.isActivo })
-      cargarServicios()
-    } catch {
-      setErrorAccion("No se pudo cambiar el estado del servicio.")
+      setRecarga((n) => n + 1)
+    } catch (err) {
+      setErrorAccion(mensajeDeError(err, "No se pudo cambiar el estado del servicio."))
     }
   }
 
-  if (cargando) return <p className="text-pizarra">Cargando servicios...</p>
+  if (cargando) return <Cargando texto="Cargando servicios..." />
 
   if (error) {
     return <p className="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">{error}</p>
@@ -174,9 +149,9 @@ export default function ServiciosNegocio({ negocioId }) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold">Servicios</h2>
         {!editando && (
-           <button onClick={() => setEditando("nuevo")} className="px-4 py-2 rounded-lg bg-ya font-semibold transition hover:brightness-110 active:brightness-90 active:scale-95">
-             + Nuevo servicio
-            </button>
+          <button onClick={() => setEditando("nuevo")} className="px-4 py-2 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95">
+            + Nuevo servicio
+          </button>
         )}
       </div>
 
@@ -189,7 +164,7 @@ export default function ServiciosNegocio({ negocioId }) {
         />
       )}
 
-      {errorAccion && <p className="mb-4 text-sm text-red-600">{errorAccion}</p>}
+      {errorAccion && <p className="mb-4 text-sm text-red-700">{errorAccion}</p>}
 
       {servicios.length === 0 ? (
         <p className="text-pizarra">Este negocio todavía no tiene servicios.</p>
@@ -218,10 +193,10 @@ export default function ServiciosNegocio({ negocioId }) {
                 >
                   {servicio.isActivo ? "Activo" : "Inactivo"}
                 </span>
-                <button onClick={() => setEditando(servicio)} className="text-sm px-3 py-1 rounded-lg border border-borde transition hover:bg-gray-100">
+                <button onClick={() => setEditando(servicio)} className="text-sm px-3 py-1 rounded-lg border border-borde transition hover:bg-fondo">
                   Editar
                 </button>
-                <button onClick={() => cambiarActivo(servicio)} className="text-sm px-3 py-1 rounded-lg border border-borde transition hover:bg-gray-100">
+                <button onClick={() => cambiarActivo(servicio)} className="text-sm px-3 py-1 rounded-lg border border-borde transition hover:bg-fondo">
                   {servicio.isActivo ? "Desactivar" : "Activar"}
                 </button>
               </div>
