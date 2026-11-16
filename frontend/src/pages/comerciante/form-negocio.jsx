@@ -1,9 +1,9 @@
 import { useLocation, useParams } from "wouter"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import Campo from "../../components/campo"
 import clienteAxios from "../../api/clienteAxios"
 import { mensajeDeError } from "../../utils/errores"
-import Pendiente from "../../components/pendiente"
 
 // A2 · POST /api/negocios  y  PUT /api/negocios/{id}
 // La misma pagina sirve para crear (sin id) y para editar (con id)
@@ -11,11 +11,14 @@ export default function FormNegocio() {
   const [, navegar] = useLocation()
   const { id } = useParams()
   const editando = id !== undefined
+  const [cargando, setCargando] = useState(editando) // Solo cargamos si estamos editando
+  const [errorCarga, setErrorCarga] = useState("")
 
   const {
     register,
     handleSubmit,
     setError,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
@@ -30,17 +33,59 @@ export default function FormNegocio() {
     },
   })
 
+  useEffect(() => {
+    if (!editando) return
+    const controlador = new AbortController() //Para cancelar la solicitud si el componente se desmonta
+
+    async function cargarNegocio() {
+      try {
+        const respuesta = await clienteAxios.get(`/negocios/${id}`, {
+          signal: controlador.signal,
+        })
+
+        const negocio = respuesta.data.datos
+
+        // Rellenamos el formulario con los datos del negocio
+        reset({
+          nombre: negocio.nombre,
+          rubro: negocio.rubro,
+          descripcion: negocio.descripcion ?? "",
+          direccion: negocio.direccion ?? "",
+          telefono: negocio.telefono ?? "",
+          intervaloTurnosMinutos: negocio.intervaloTurnosMinutos,
+          diasMaxAnticipacion: negocio.diasMaxAnticipacion,
+          horasToleranciaCancelacion: negocio.horasToleranciaCancelacion,
+        })
+      } catch (error) {
+        if (!controlador.signal.aborted) {
+          setErrorCarga(mensajeDeError(error))
+        }
+      } finally {
+        if (!controlador.signal.aborted) {
+          setCargando(false)
+        }
+      }
+    }
+
+    cargarNegocio()
+    return () => controlador.abort() // Cancelar la solicitud si el componente se desmonta
+  }, [id, editando, reset]) //Dependencias: id, editando y reset (para evitar advertencias de React Hook useEffect)
+
   async function guardar(datos) {
     try {
-      const respuesta = await clienteAxios.post("/negocios", {
+      const datosEnviar = {
         ...datos,
         nombre: datos.nombre.trim(),
         rubro: datos.rubro.trim(),
-      })
+      }
 
-      const negocioCreado = respuesta.data.datos
+      const respuesta = editando
+        ? await clienteAxios.put(`/negocios/${id}`, datosEnviar)
+        : await clienteAxios.post("/negocios", datosEnviar)
 
-      navegar(`/mis-negocios/${negocioCreado.id}`)
+      const negocioGuardado = respuesta.data.datos
+
+      navegar(`/mis-negocios/${negocioGuardado.id}`)
     } catch (error) {
       const erroresBackend = error.response?.data?.errors
 
@@ -71,6 +116,17 @@ export default function FormNegocio() {
         message: mensajeDeError(error),
       })
     }
+  }
+
+  if (cargando) {
+    return <p>Cargando datos del negocio...</p>
+  }
+  if (errorCarga) {
+    return (
+      <p role="alert" className="text-red-700">
+        {errorCarga}
+      </p>
+    )
   }
 
   return (

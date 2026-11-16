@@ -2,13 +2,13 @@ import { Link } from "wouter"
 import { useEffect, useState } from "react"
 import clienteAxios from '../../api/clienteAxios'
 import { mensajeDeError } from '../../utils/errores'
-import Pendiente from "../../components/pendiente"
 
 // A1 · GET /api/negocios/mios   ·   A3 · PATCH /api/negocios/{id}/estado
 export default function MisNegocios() {
   const [negocios, setNegocios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  const [actualizandoId, setActualizandoId] = useState(null)
 
   useEffect(() => {
     const controlador = new AbortController(); // Para cancelar la solicitud si el componente se desmonta
@@ -37,6 +37,32 @@ export default function MisNegocios() {
     return () => controlador.abort()  // Cancelar la solicitud si el componente se desmonta
   }, [])
 
+  async function cambiarEstado(negocio) {
+    setActualizandoId(negocio.id)
+    setError("") // Limpiar error previo
+
+    try {
+      const respuesta = await clienteAxios.put(
+        `/negocios/${negocio.id}`,
+        { isActivo: !negocio.isActivo }
+      )
+
+      const negocioActualizado = respuesta.data.datos
+
+      // Reemplaza en la lista el negocio actualizado por el backend conservando los demás y sin recargar la pagina.
+      setNegocios((actuales) =>
+        actuales.map((actual) =>
+          actual.id === negocioActualizado.id
+            ? negocioActualizado
+            : actual
+        )
+      )
+    } catch (error) {
+      setError(mensajeDeError(error))
+    } finally {
+      setActualizandoId(null)
+    }
+  }
 
   return (
     <section>
@@ -68,7 +94,7 @@ export default function MisNegocios() {
         negocios.length === 0 ? (
           <p>Todavía no tenés negocios. Creá el primero</p>
         ) : (
-          // crear un componente para el listado de negocios, con la info y los links a administrar y editar
+          // Crear un componente para el listado de negocios, con la info y los links a administrar y editar
           <ul className="grid gap-4 sm:grid-cols-2">
             {negocios.map((negocio) => (
               <li
@@ -89,7 +115,7 @@ export default function MisNegocios() {
                   <span
                     className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${negocio.isActivo
                       ? "bg-green-50 text-green-800"
-                      : "bg-slate-100 text-slate-700"
+                      : "bg-red-50 text-red-800"
                       }`}
                   >
                     {negocio.isActivo ? "Activo" : "Inactivo"}
@@ -115,6 +141,19 @@ export default function MisNegocios() {
                     >
                       Editar datos
                     </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => cambiarEstado(negocio)}
+                      disabled={actualizandoId !== null}
+                      className="rounded-lg border border-borde px-4 py-2 text-sm font-medium transition hover:bg-fondo disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {actualizandoId === negocio.id
+                        ? "Guardando..."
+                        : negocio.isActivo
+                          ? "Desactivar"
+                          : "Activar"}
+                    </button>
                   </div>
                 </div>
               </li>
