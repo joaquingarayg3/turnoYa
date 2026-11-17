@@ -1,7 +1,10 @@
-import { useLocation, useParams } from "wouter"
+import { Link, useLocation, useParams } from "wouter"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import Campo from "../../components/campo"
+import Cargando from "../../components/cargando"
+import { esquemaNegocio } from "../../schemas/negocio-schemas"
 import clienteAxios from "../../api/clienteAxios"
 import { mensajeDeError } from "../../utils/errores"
 
@@ -21,6 +24,7 @@ export default function FormNegocio() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm({
+    resolver: zodResolver(esquemaNegocio), // Validaciones en src/schemas/negocio-schemas.js
     defaultValues: {
       nombre: "",
       rubro: "",
@@ -119,13 +123,18 @@ export default function FormNegocio() {
   }
 
   if (cargando) {
-    return <p>Cargando datos del negocio...</p>
+    return <Cargando texto="Cargando datos del negocio..." />
   }
   if (errorCarga) {
     return (
-      <p role="alert" className="text-red-700">
-        {errorCarga}
-      </p>
+      <section className="max-w-xl mx-auto">
+        <p role="alert" className="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
+          {errorCarga}
+        </p>
+        <Link href="/mis-negocios" className="mt-4 inline-block font-medium text-ya-texto hover:underline">
+          Volver a mis negocios
+        </Link>
+      </section>
     )
   }
 
@@ -145,54 +154,28 @@ export default function FormNegocio() {
           id="nombre"
           label="Nombre"
           error={errors.nombre}
-          {...register("nombre", {
-            required: "El nombre es obligatorio",
-            validate: (valor) =>
-              valor.trim().length >= 2 || "Ingresá al menos 2 caracteres",
-            maxLenght: {
-              value: 100,
-              message: "Máximo 100 caracteres",
-            },
-          })}
+          {...register("nombre")}
         />
 
         <Campo
           id="rubro"
           label="Rubro"
           error={errors.rubro}
-          {...register("rubro", {
-            required: "El rubro es obligatorio",
-            validate: (valor) =>
-              valor.trim().length >= 2 || "Ingresá al menos 2 caracteres",
-            maxLenght: {
-              value: 60,
-              message: "Máximo 60 caracteres",
-            }
-          })}
+          {...register("rubro")}
         />
 
         <Campo
           id="descripcion"
           label="Descripción"
           error={errors.descripcion}
-          {...register("descripcion", {
-            maxLength: {
-              value: 500,
-              message: "Máximo 500 caracteres",
-            },
-          })}
+          {...register("descripcion")}
         />
 
         <Campo
           id="direccion"
           label="Dirección"
           error={errors.direccion}
-          {...register("direccion", {
-            maxLength: {
-              value: 150,
-              message: "Máximo 150 caracteres",
-            },
-          })}
+          {...register("direccion")}
         />
 
         <Campo
@@ -200,27 +183,16 @@ export default function FormNegocio() {
           label="Teléfono"
           type="tel"
           error={errors.telefono}
-          {...register("telefono", {
-            maxLength: {
-              value: 30,
-              message: "Máximo 30 caracteres",
-            },
-          })}
+          {...register("telefono")}
         />
 
         <Campo
           id="intervaloTurnosMinutos"
           label="Intervalo entre turnos (minutos)"
           type="number"
+          ayuda="Cada cuántos minutos puede empezar un turno. La duración de los servicios tiene que ser múltiplo de este valor."
           error={errors.intervaloTurnosMinutos}
-          {...register("intervaloTurnosMinutos", {
-            valueAsNumber: true,
-            required: "Ingresá el intervalo",
-            min: { value: 5, message: "Mínimo 5 minutos" },
-            max: { value: 240, message: "Máximo 240 minutos" },
-            validate: (valor) =>
-              Number.isInteger(valor) || "Ingresá un número entero",
-          })}
+          {...register("intervaloTurnosMinutos", { valueAsNumber: true })}
         />
 
         <Campo
@@ -228,14 +200,7 @@ export default function FormNegocio() {
           label="Anticipación máxima para reservar (días)"
           type="number"
           error={errors.diasMaxAnticipacion}
-          {...register("diasMaxAnticipacion", {
-            valueAsNumber: true,
-            required: "Ingresá la anticipación máxima",
-            min: { value: 1, message: "Mínimo 1 día" },
-            max: { value: 365, message: "Máximo 365 días" },
-            validate: (valor) =>
-              Number.isInteger(valor) || "Ingresá un número entero",
-          })}
+          {...register("diasMaxAnticipacion", { valueAsNumber: true })}
         />
 
         <Campo
@@ -243,14 +208,7 @@ export default function FormNegocio() {
           label="Anticipación mínima para cancelar (horas)"
           type="number"
           error={errors.horasToleranciaCancelacion}
-          {...register("horasToleranciaCancelacion", {
-            valueAsNumber: true,
-            required: "Ingresá la tolerancia de cancelación",
-            min: { value: 0, message: "Mínimo 0 horas" },
-            max: { value: 168, message: "Máximo 168 horas" },
-            validate: (valor) =>
-              Number.isInteger(valor) || "Ingresá un número entero",
-          })}
+          {...register("horasToleranciaCancelacion", { valueAsNumber: true })}
         />
 
         {errors.root && (
@@ -258,13 +216,21 @@ export default function FormNegocio() {
             {errors.root.message}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-lg bg-ya px-4 py-2 font-semibold text-turno disabled:opacity-60"
-        >
-          {isSubmitting ? "Guardando..." : "Guardar negocio"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="rounded-lg bg-ya px-4 py-2 font-semibold text-turno transition hover:brightness-95 disabled:opacity-60"
+          >
+            {isSubmitting ? "Guardando..." : "Guardar negocio"}
+          </button>
+          <Link
+            href={editando ? `/mis-negocios/${id}` : "/mis-negocios"}
+            className="font-medium text-ya-texto hover:underline"
+          >
+            Cancelar
+          </Link>
+        </div>
       </form>
     </section>
   )

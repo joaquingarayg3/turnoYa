@@ -2,12 +2,15 @@ import { Link } from "wouter"
 import { useEffect, useState } from "react"
 import clienteAxios from '../../api/clienteAxios'
 import { mensajeDeError } from '../../utils/errores'
+import Cargando from "../../components/cargando"
 
-// A1 · GET /api/negocios/mios   ·   A3 · PATCH /api/negocios/{id}/estado
+// A1 · GET /api/negocios/mios   ·   A3 · PUT /api/negocios/{id} con { isActivo } (baja lógica)
 export default function MisNegocios() {
   const [negocios, setNegocios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  // Error al activar/desactivar: se muestra arriba de la lista sin ocultarla
+  const [errorAccion, setErrorAccion] = useState("")
   const [actualizandoId, setActualizandoId] = useState(null)
 
   useEffect(() => {
@@ -39,7 +42,7 @@ export default function MisNegocios() {
 
   async function cambiarEstado(negocio) {
     setActualizandoId(negocio.id)
-    setError("") // Limpiar error previo
+    setErrorAccion("") // Limpiar error previo
 
     try {
       const respuesta = await clienteAxios.put(
@@ -58,7 +61,7 @@ export default function MisNegocios() {
         )
       )
     } catch (error) {
-      setError(mensajeDeError(error))
+      setErrorAccion(mensajeDeError(error))
     } finally {
       setActualizandoId(null)
     }
@@ -82,17 +85,28 @@ export default function MisNegocios() {
         </Link>
       </div>
 
-      {cargando && <p>Cargando negocios...</p>}
+      {cargando && <Cargando texto="Cargando negocios..." />}
 
       {error && (
-        <p role="alert" className="text-red-700">
+        <p role="alert" className="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
           {error}
+        </p>
+      )}
+
+      {errorAccion && (
+        <p role="alert" className="mb-4 text-sm text-red-700">
+          {errorAccion}
         </p>
       )}
 
       {!cargando && !error && (
         negocios.length === 0 ? (
-          <p>Todavía no tenés negocios. Creá el primero</p>
+          <div className="p-8 text-center bg-white rounded-2xl border border-borde">
+            <p className="text-pizarra">Todavía no tenés negocios.</p>
+            <Link href="/mis-negocios/nuevo" className="mt-3 inline-block font-medium text-ya-texto hover:underline">
+              Crear el primero
+            </Link>
+          </div>
         ) : (
           // Crear un componente para el listado de negocios, con la info y los links a administrar y editar
           <ul className="grid gap-4 sm:grid-cols-2">
@@ -103,7 +117,7 @@ export default function MisNegocios() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h2 className="break-word text-xl font-bold">
+                    <h2 className="break-words text-xl font-bold">
                       {negocio.nombre}
                     </h2>
 
