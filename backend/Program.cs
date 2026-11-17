@@ -112,11 +112,25 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("Vite");
 
-app.UseHttpsRedirection();
+// En desarrollo se fuerza HTTPS. En el hosting gratuito (MonsterASP) el sitio arranca solo con HTTP:
+// redirigir a HTTPS ahi dejaria la app inaccesible.
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// Produccion: el mismo backend sirve el front compilado (frontend/dist copiado a wwwroot).
+// Front y API quedan en la misma direccion, asi no hace falta CORS.
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Cualquier ruta que no sea de la API (ej: /mis-turnos) devuelve el index.html del front,
+// y Wouter muestra la pagina que corresponde. Asi recargar una pagina no da 404.
+app.MapFallbackToFile("index.html");
 
 app.Run();
