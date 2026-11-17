@@ -19,6 +19,7 @@ const MisTurnos = lazy(() => import("./pages/cliente/mis-turnos"))
 const MisNegocios = lazy(() => import("./pages/comerciante/mis-negocios"))
 const FormNegocio = lazy(() => import("./pages/comerciante/form-negocio"))
 const MiNegocio = lazy(() => import("./pages/comerciante/mi-negocio"))
+const Agenda = lazy(() => import("./pages/comerciante/agenda"))
 
 // Admin (staff)
 const PanelAdmin = lazy(() => import("./pages/admin/panel-admin"))
@@ -62,6 +63,9 @@ function App() {
             </Route>
             <Route path="/mis-negocios/nuevo">                                   {/* A2 */}
               <RutaPrivada><FormNegocio /></RutaPrivada>
+            </Route>
+            <Route path="/mis-negocios/agenda">                                  {/* Agenda de todos los negocios */}
+              <RutaPrivada><Agenda /></RutaPrivada>
             </Route>
             <Route path="/mis-negocios/:id/editar">                              {/* A2 */}
               <RutaPrivada><FormNegocio /></RutaPrivada>

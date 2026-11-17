@@ -25,6 +25,23 @@
     @apply font-display tracking-tight;
   }
 
+  /* Tailwind 4 deja los botones con la flecha comun: la "manito" marca todo lo que se puede tocar.
+     Los deshabilitados muestran que no se pueden usar. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  select:not(:disabled),
+  label[for],
+  summary,
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+
   /* En el celular, campos y botones de al menos 44 px de alto: comodos para el dedo */
   @media (max-width: 639px) {
     input:not([type="checkbox"]):not([type="radio"]),

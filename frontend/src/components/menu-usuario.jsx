@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react"
 import { Link } from "wouter"
 
 // Menu de la cuenta en el header: "Joaquín ▾" abre las opciones del usuario logueado.
-// El staff (Admin) ve ademas el acceso al Panel de Administracion.
-export default function MenuUsuario({ usuario, esAdmin, onSalir }) {
+// Primero el cambio de modo (cliente / negocio); el staff (Admin) ve ademas el Panel de Administracion.
+export default function MenuUsuario({ usuario, esAdmin, modoNegocio, onSalir }) {
   const [abierto, setAbierto] = useState(false)
   const contenedor = useRef(null)
 
@@ -58,6 +58,18 @@ export default function MenuUsuario({ usuario, esAdmin, onSalir }) {
             <p className="truncate text-xs text-pizarra">{usuario.email}</p>
           </div>
           <div className="my-1 border-t border-borde" />
+
+          <Link
+            href={modoNegocio ? "/" : "/mis-negocios"}
+            role="menuitem"
+            onClick={() => setAbierto(false)}
+            className={claseItem}
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-ya-texto" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M7 4 3.5 7.5 7 11M3.5 7.5H17M17 13l3.5 3.5L17 20M20.5 16.5H7" />
+            </svg>
+            {modoNegocio ? "Volver a reservar" : "Gestionar mi negocio"}
+          </Link>
 
           {esAdmin && (
             <Link href="/admin" role="menuitem" onClick={() => setAbierto(false)} className={claseItem}>

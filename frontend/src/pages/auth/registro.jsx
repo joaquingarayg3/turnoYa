@@ -86,7 +86,7 @@ export default function Registro() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-2 px-4 py-2.5 rounded-lg font-semibold bg-ya text-turno hover:brightness-95 disabled:opacity-60"
+            className="mt-2 px-4 py-2.5 rounded-lg font-semibold bg-ya-texto active:bg-ya text-white hover:bg-ya disabled:opacity-60"
           >
             {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
           </button>

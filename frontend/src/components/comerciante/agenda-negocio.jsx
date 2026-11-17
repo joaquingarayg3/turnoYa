@@ -3,38 +3,7 @@ import clienteAxios from "../../api/clienteAxios"
 import { mensajeDeError } from "../../utils/errores"
 import { useAvisos } from "../../hooks/use-avisos"
 import Cargando from "../cargando"
-
-// Mismo orden que el enum EstadoTurno del backend (por si llega como número)
-const ESTADOS = ["Pendiente", "Confirmado", "Cancelado", "Completado"]
-
-const COLORES_ESTADO = {
-  Pendiente: "bg-amber-100 text-amber-800",
-  Confirmado: "bg-green-100 text-green-700",
-  Cancelado: "bg-red-100 text-red-700",
-  Completado: "bg-blue-100 text-blue-700",
-}
-
-// Fecha local en formato año-mes-día (lo que espera el backend)
-function formatearFecha(fecha) {
-  const anio = fecha.getFullYear()
-  const mes = String(fecha.getMonth() + 1).padStart(2, "0")
-  const dia = String(fecha.getDate()).padStart(2, "0")
-  return `${anio}-${mes}-${dia}`
-}
-
-function sumarDias(fechaTexto, dias) {
-  const [anio, mes, dia] = fechaTexto.split("-").map(Number)
-  return formatearFecha(new Date(anio, mes - 1, dia + dias))
-}
-
-function nombreEstado(estado) {
-  return typeof estado === "number" ? ESTADOS[estado] : estado
-}
-
-// Hora en formato de 24 h (15:00), que es el habitual en Argentina
-function hora(fechaHora) {
-  return new Date(fechaHora).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-}
+import { COLORES_ESTADO, formatearFecha, hora, nombreEstado, sumarDias } from "../../utils/agenda"
 
 export default function AgendaNegocio({ negocioId }) {
   const [fecha, setFecha] = useState(formatearFecha(new Date()))
@@ -95,6 +64,8 @@ export default function AgendaNegocio({ negocioId }) {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="text-xl font-bold">Agenda</h2>
         <div className="flex items-center gap-2">
+          {/* "Hoy" a la izquierda, lejos de la flecha de avanzar, para no tocarlo sin querer */}
+          <button onClick={() => setFecha(formatearFecha(new Date()))} className={claseBoton}>Hoy</button>
           <button onClick={() => setFecha(sumarDias(fecha, -1))} className={claseBoton} aria-label="Día anterior">←</button>
           <input
             type="date"
@@ -104,7 +75,6 @@ export default function AgendaNegocio({ negocioId }) {
             aria-label="Fecha de la agenda"
           />
           <button onClick={() => setFecha(sumarDias(fecha, 1))} className={claseBoton} aria-label="Día siguiente">→</button>
-          <button onClick={() => setFecha(formatearFecha(new Date()))} className={claseBoton}>Hoy</button>
         </div>
       </div>
 
@@ -147,7 +117,7 @@ export default function AgendaNegocio({ negocioId }) {
                     <button
                       onClick={() => cambiarEstado(turno, "confirmar")}
                       disabled={procesando === turno.id}
-                      className="text-sm px-3 py-1 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95 disabled:opacity-50"
+                      className="text-sm px-3 py-1 rounded-lg bg-ya-texto active:bg-ya text-white font-semibold transition hover:bg-ya active:scale-95 disabled:opacity-50"
                     >
                       Confirmar
                     </button>

@@ -74,7 +74,7 @@ export default function DetalleNegocio() {
           {tieneServicios && (
             <Link
               href={`/negocios/${negocio.id}/reservar`}
-              className="hidden sm:inline-flex px-5 py-2.5 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95"
+              className="hidden sm:inline-flex px-5 py-2.5 rounded-lg bg-ya-texto active:bg-ya text-white font-semibold transition hover:bg-ya active:scale-95"
             >
               Reservar turno
             </Link>
@@ -139,7 +139,7 @@ export default function DetalleNegocio() {
         <div className="sm:hidden fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-borde bg-white p-3">
           <Link
             href={`/negocios/${negocio.id}/reservar`}
-            className="block w-full rounded-xl bg-ya py-3 text-center font-semibold text-turno active:scale-[0.98]"
+            className="block w-full rounded-xl bg-ya-texto active:bg-ya hover:bg-ya py-3 text-center font-semibold text-white active:scale-[0.98]"
           >
             Reservar turno
           </Link>

@@ -1,20 +1,28 @@
 import { useEffect, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useLocation, useParams } from "wouter";
 import clienteAxios from "../../api/clienteAxios";
-import Campo from "../../components/campo";
 import Cargando from "../../components/cargando";
 import PortadaNegocio from "../../components/portada-negocio";
+import CalendarioReserva from "../../components/cliente/calendario-reserva";
 import { esquemaReserva } from "../../schemas/turno-schemas";
-import { aFechaHoraLocal, aValorInput } from "../../utils/fechas";
+import { aFechaHoraLocal, aValorInput, formatearFechaHora } from "../../utils/fechas";
+import { DIAS_SEMANA } from "../../utils/dias";
 import { mensajeDeError } from "../../utils/errores";
 import { useAvisos } from "../../hooks/use-avisos";
+
+// Dia de la semana como lo manda el back ("Monday") -> numero de JavaScript (0 = domingo ... 6 = sabado)
+const NUMERO_DIA = Object.fromEntries(DIAS_SEMANA.map((dia, i) => [dia.valor, (i + 1) % 7]));
 
 // C2 · POST /api/turnos  (los datos del negocio salen de GET /api/catalogo/negocios/{id})
 // Los horarios que se ofrecen salen de GET /api/servicios/{id}/disponibilidad?fecha=:
 // el back ya descarta los que estan fuera del horario de atencion, los ocupados, los pasados
 // y aquellos en los que el servicio no termina antes del cierre.
+//
+// En vez de campos clasicos se elige con tarjetas (servicio), un calendario (dia) y botones (horario).
+// Igual es un formulario de React Hook Form + Zod: cada parte se conecta con <Controller>
+// y guarda el mismo valor de texto que guardaria un input ("3", "2026-11-18", "10:00").
 export default function Reservar() {
   const { id } = useParams();
   const { avisar } = useAvisos();
@@ -38,11 +46,15 @@ export default function Reservar() {
     setValue,
     control,
     formState: { errors, isSubmitting },
-  } = useForm({ resolver: zodResolver(esquemaReserva) });
+  } = useForm({
+    resolver: zodResolver(esquemaReserva),
+    defaultValues: { servicioId: "", dia: "", hora: "", notas: "" },
+  });
 
-  // Se actualizan cada vez que cambia el servicio o el dia
+  // Se actualizan cada vez que cambia el servicio, el dia o el horario
   const servicioId = useWatch({ control, name: "servicioId" });
   const diaElegido = useWatch({ control, name: "dia" });
+  const horaElegida = useWatch({ control, name: "hora" });
 
   useEffect(() => {
     const controlador = new AbortController(); // Para cancelar el pedido si se sale de la pagina
@@ -143,14 +155,16 @@ export default function Reservar() {
   const servicios = negocio.servicios.filter((servicio) => servicio.isActivo);
   const dias = negocio.diasMaxAnticipacion;
 
-  // El input de tipo "date" usa el formato "2026-11-26": son los primeros 10 caracteres del valor de aValorInput
+  // Primer y ultimo dia reservable, en formato "2026-11-26" (los primeros 10 caracteres de aValorInput)
   const ahora = new Date();
   const hoy = aValorInput(ahora).slice(0, 10);
   const ultimoDia = aValorInput(
     new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + dias),
   ).slice(0, 10);
+  // Dias de la semana en que el negocio atiende: los demas aparecen en gris en el calendario
+  const diasAbiertos = new Set(negocio.horarios.map((horario) => NUMERO_DIA[horario.diaSemana]));
 
-  // Estado del selector de horario, segun lo que ya llego del back
+  // Estado de los horarios, segun lo que ya llego del back
   const claveActual =
     servicioId && diaElegido ? `${servicioId}|${diaElegido}|${recarga}` : "";
   const buscandoHorarios =
@@ -160,16 +174,16 @@ export default function Reservar() {
   const errorHorarios =
     claveActual !== "" && !buscandoHorarios ? disponibilidad.error : "";
 
-  let textoHorario = "Elegí un horario";
-  if (!claveActual) textoHorario = "Primero elegí el servicio y el día";
-  else if (buscandoHorarios) textoHorario = "Buscando horarios libres...";
-  else if (horarios.length === 0) textoHorario = "No hay horarios libres ese día";
+  const servicioElegido = servicios.find((servicio) => String(servicio.id) === servicioId);
+  const precio = (valor) => `$${Number(valor).toLocaleString("es-AR")}`;
+  const titulo = "mb-3 text-lg font-bold";
+  const mensajeError = (error) => error && <p className="mt-2 text-sm text-red-700">{error.message}</p>;
 
   return (
     <section className="max-w-xl mx-auto">
       <div className="overflow-hidden rounded-2xl border border-borde bg-white">
         <PortadaNegocio rubro={negocio.rubro} imagen={negocio.bannerUrl} alto="h-24" />
-        <div className="p-8">
+        <div className="p-5 sm:p-8">
           <h1 className="text-3xl font-bold">Reservar turno</h1>
           <p className="mt-1 text-pizarra">{negocio.nombre}</p>
 
@@ -180,106 +194,156 @@ export default function Reservar() {
           ) : (
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="mt-6 flex flex-col gap-4"
+              className="mt-6 flex flex-col gap-8"
               noValidate
             >
-              <div>
-                <label
-                  htmlFor="servicioId"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Servicio
-                </label>
-                <select
-                  id="servicioId"
-                  aria-invalid={errors.servicioId ? "true" : "false"}
-                  className={`w-full rounded-lg border bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ya ${
-                    errors.servicioId ? "border-red-600" : "border-borde"
-                  }`}
-                  {...register("servicioId", { onChange: limpiarHora })}
-                >
-                  <option value="">Elegí un servicio</option>
-                  {servicios.map((servicio) => (
-                    <option key={servicio.id} value={servicio.id}>
-                      {servicio.nombre} · {servicio.duracionMinutos} min · $
-                      {servicio.precio.toLocaleString("es-AR")}
-                    </option>
-                  ))}
-                </select>
-                {errors.servicioId && (
-                  <p className="mt-1 text-sm text-red-700">
-                    {errors.servicioId.message}
-                  </p>
-                )}
-              </div>
+              {/* 1 · Servicio: una tarjeta por servicio */}
+              <fieldset>
+                <legend className={titulo}>1. Elegí el servicio</legend>
+                <Controller
+                  name="servicioId"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="grid gap-2">
+                      {servicios.map((servicio) => {
+                        const elegido = field.value === String(servicio.id);
+                        return (
+                          <button
+                            key={servicio.id}
+                            type="button"
+                            aria-pressed={elegido}
+                            onClick={() => {
+                              field.onChange(String(servicio.id));
+                              limpiarHora();
+                            }}
+                            className={`flex items-center justify-between gap-3 rounded-xl border p-4 text-left transition ${
+                              elegido
+                                ? "border-ya bg-ya/10 ring-1 ring-ya"
+                                : "border-borde bg-white hover:border-pizarra"
+                            }`}
+                          >
+                            <span>
+                              <span className="block font-semibold">{servicio.nombre}</span>
+                              <span className="text-sm text-pizarra">{servicio.duracionMinutos} min</span>
+                            </span>
+                            <span className="font-semibold whitespace-nowrap">{precio(servicio.precio)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                />
+                {mensajeError(errors.servicioId)}
+              </fieldset>
 
-              <Campo
-                id="dia"
-                label="Día"
-                type="date"
-                min={hoy}
-                max={ultimoDia}
-                ayuda={`Se puede reservar hasta ${dias} días adelante.`}
-                error={errors.dia}
-                {...register("dia", { onChange: limpiarHora })}
-              />
-
-              <div>
-                <label htmlFor="hora" className="block text-sm font-medium mb-1">
-                  Horario
-                </label>
-                <select
-                  id="hora"
-                  disabled={horarios.length === 0}
-                  aria-invalid={errors.hora ? "true" : "false"}
-                  className={`w-full rounded-lg border bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ya disabled:opacity-60 ${
-                    errors.hora ? "border-red-600" : "border-borde"
-                  }`}
-                  {...register("hora")}
-                >
-                  <option value="">
-                    {textoHorario}
-                  </option>
-                  {horarios.map((hora) => (
-                    <option key={hora} value={hora}>
-                      {hora}
-                    </option>
-                  ))}
-                </select>
-                {errorHorarios ? (
-                  <p className="mt-1 text-sm text-red-700">{errorHorarios}</p>
+              {/* 2 · Dia: calendario del mes */}
+              <fieldset>
+                <legend className={titulo}>2. Elegí el día</legend>
+                {diasAbiertos.size === 0 ? (
+                  <p className="text-pizarra">El negocio todavía no cargó sus horarios de atención.</p>
                 ) : (
-                  <p className="mt-1 text-sm text-pizarra">
-                    Solo aparecen los horarios libres en los que el servicio
-                    entra completo dentro del horario de atención.
-                  </p>
+                  <Controller
+                    name="dia"
+                    control={control}
+                    render={({ field }) => (
+                      <CalendarioReserva
+                        valor={field.value}
+                        onElegir={(fecha) => {
+                          field.onChange(fecha);
+                          limpiarHora();
+                        }}
+                        minimo={hoy}
+                        maximo={ultimoDia}
+                        diasAbiertos={diasAbiertos}
+                      />
+                    )}
+                  />
                 )}
-                {errors.hora && (
-                  <p className="mt-1 text-sm text-red-700">
-                    {errors.hora.message}
-                  </p>
-                )}
-              </div>
+                {mensajeError(errors.dia)}
+              </fieldset>
 
+              {/* 3 · Horario: botones con los horarios libres */}
+              <fieldset>
+                <legend className={titulo}>3. Elegí el horario</legend>
+                {!claveActual ? (
+                  <p className="text-pizarra">Primero elegí el servicio y el día.</p>
+                ) : buscandoHorarios ? (
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4" aria-busy="true">
+                    {Array.from({ length: 8 }, (_, i) => (
+                      <span key={i} className="h-11 animate-pulse rounded-lg bg-fondo" />
+                    ))}
+                  </div>
+                ) : errorHorarios ? (
+                  <p className="text-sm text-red-700">{errorHorarios}</p>
+                ) : horarios.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-borde p-4 text-center text-pizarra">
+                    No hay horarios libres ese día. Probá con otro día.
+                  </p>
+                ) : (
+                  <Controller
+                    name="hora"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {horarios.map((hora) => {
+                          const elegido = field.value === hora;
+                          return (
+                            <button
+                              key={hora}
+                              type="button"
+                              aria-pressed={elegido}
+                              onClick={() => field.onChange(hora)}
+                              className={`h-11 rounded-lg border text-sm font-semibold transition ${
+                                elegido
+                                  ? "border-turno bg-turno text-white"
+                                  : "border-borde bg-white text-turno hover:border-turno"
+                              }`}
+                            >
+                              {hora}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  />
+                )}
+                {claveActual && !buscandoHorarios && horarios.length > 0 && (
+                  <p className="mt-2 text-sm text-pizarra">
+                    Solo aparecen los horarios en los que el servicio entra completo dentro del horario de atención.
+                  </p>
+                )}
+                {mensajeError(errors.hora)}
+              </fieldset>
+
+              {/* Notas (campo clasico: es texto libre) */}
               <div>
                 <label htmlFor="notas" className="block text-sm font-medium mb-1">
                   Notas (opcional)
                 </label>
                 <textarea
                   id="notas"
-                  rows={3}
+                  rows={2}
                   aria-invalid={errors.notas ? "true" : "false"}
                   className={`w-full rounded-lg border bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ya ${
                     errors.notas ? "border-red-600" : "border-borde"
                   }`}
                   {...register("notas")}
                 />
-                {errors.notas && (
-                  <p className="mt-1 text-sm text-red-700">
-                    {errors.notas.message}
-                  </p>
-                )}
+                {mensajeError(errors.notas)}
               </div>
+
+              {/* Resumen antes de confirmar */}
+              {servicioElegido && diaElegido && horaElegida && (
+                <div className="rounded-xl bg-fondo p-4">
+                  <p className="text-sm text-pizarra">Tu turno</p>
+                  <p className="font-semibold first-letter:uppercase">
+                    {formatearFechaHora(`${diaElegido}T${horaElegida}:00`)} h
+                  </p>
+                  <p className="text-sm text-pizarra">
+                    {servicioElegido.nombre} · {servicioElegido.duracionMinutos} min · {precio(servicioElegido.precio)}
+                  </p>
+                </div>
+              )}
 
               {errors.root && (
                 <p
@@ -290,13 +354,13 @@ export default function Reservar() {
                 </p>
               )}
 
-              <div className="mt-2 flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2.5 rounded-lg font-semibold bg-ya text-turno hover:brightness-95 disabled:opacity-60"
+                  className="px-5 py-3 rounded-lg font-semibold bg-ya-texto active:bg-ya text-white hover:bg-ya disabled:opacity-60"
                 >
-                  {isSubmitting ? "Reservando..." : "Reservar turno"}
+                  {isSubmitting ? "Reservando..." : "Confirmar turno"}
                 </button>
                 <Link
                   href={`/negocios/${id}`}

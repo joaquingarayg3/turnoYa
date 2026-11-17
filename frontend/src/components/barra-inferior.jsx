@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter"
 import { useAuth } from "../hooks/use-auth"
+import { esModoNegocio } from "../utils/modo"
 
 // Iconos de la barra (trazos simples, viewBox 24x24)
 const ICONOS = {
@@ -17,7 +18,13 @@ const ICONOS = {
       <path d="M5.5 13v7h13v-7M10 20v-4h4v4" />
     </>
   ),
-  admin: <path d="M12 3 19.5 6v5.5c0 4.5-3.2 8-7.5 9.5-4.3-1.5-7.5-5-7.5-9.5V6Z M9 12l2 2 4-4" />,
+  // Reloj: la agenda del dia
+  agenda: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
   ingresar: <path d="M14 4h5v16h-5M10 8l4 4-4 4M14 12H4" />,
   registro: (
     <>
@@ -54,10 +61,41 @@ function Item({ href, icono, texto, activo }) {
 }
 
 // Barra de navegacion fija abajo, solo en el celular (como una app).
-// Junta los dos paneles: cliente (Inicio, Mis turnos) y comerciante (Mis negocios), mas Admin para el staff.
+// Cambia segun el modo (utils/modo.js):
+// - modo cliente: Inicio y Mis turnos
+// - modo negocio: Mis negocios y Agenda (los turnos del dia de todos sus negocios)
+// Para pasar de un modo al otro se usa el menu de la cuenta (arriba a la derecha).
+// El Panel de administracion (solo staff) no va aca: esta en el menu de la cuenta, igual que en la PC.
 export default function BarraInferior() {
   const [location] = useLocation()
-  const { usuario, esAdmin } = useAuth()
+  const { usuario } = useAuth()
+  const modoNegocio = esModoNegocio(location)
+
+  let items
+  if (!usuario) {
+    items = (
+      <>
+        <Item href="/" icono="inicio" texto="Inicio" activo={location === "/" || location.startsWith("/negocios")} />
+        <Item href="/login" icono="ingresar" texto="Ingresar" activo={location === "/login"} />
+        <Item href="/registro" icono="registro" texto="Crear cuenta" activo={location === "/registro"} />
+      </>
+    )
+  } else if (modoNegocio) {
+    const enAgenda = location === "/mis-negocios/agenda"
+    items = (
+      <>
+        <Item href="/mis-negocios" icono="negocios" texto="Mis negocios" activo={!enAgenda} />
+        <Item href="/mis-negocios/agenda" icono="agenda" texto="Agenda" activo={enAgenda} />
+      </>
+    )
+  } else {
+    items = (
+      <>
+        <Item href="/" icono="inicio" texto="Inicio" activo={location === "/" || location.startsWith("/negocios")} />
+        <Item href="/mis-turnos" icono="turnos" texto="Mis turnos" activo={location === "/mis-turnos"} />
+      </>
+    )
+  }
 
   return (
     <nav
@@ -66,19 +104,7 @@ export default function BarraInferior() {
     >
       {/* Alto fijo de 64 px (h-16): el boton fijo de "Reservar turno" se apoya justo encima */}
       <div className="flex h-16">
-        <Item href="/" icono="inicio" texto="Inicio" activo={location === "/" || location.startsWith("/negocios")} />
-        {usuario ? (
-          <>
-            <Item href="/mis-turnos" icono="turnos" texto="Mis turnos" activo={location === "/mis-turnos"} />
-            <Item href="/mis-negocios" icono="negocios" texto="Mis negocios" activo={location.startsWith("/mis-negocios")} />
-            {esAdmin && <Item href="/admin" icono="admin" texto="Gestión" activo={location === "/admin"} />}
-          </>
-        ) : (
-          <>
-            <Item href="/login" icono="ingresar" texto="Ingresar" activo={location === "/login"} />
-            <Item href="/registro" icono="registro" texto="Crear cuenta" activo={location === "/registro"} />
-          </>
-        )}
+        {items}
       </div>
     </nav>
   )

@@ -77,7 +77,7 @@ function FormularioServicio({ servicio, onGuardar, onCancelar }) {
       {errors.root && <p className="text-sm text-red-700" role="alert">{errors.root.message}</p>}
 
       <div className="flex gap-2">
-        <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95 disabled:opacity-50">
+        <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg bg-ya-texto active:bg-ya text-white font-semibold transition hover:bg-ya active:scale-95 disabled:opacity-50">
           {isSubmitting ? "Guardando..." : "Guardar"}
         </button>
         <button type="button" onClick={onCancelar} className="px-4 py-2 rounded-lg border border-borde transition hover:bg-fondo">
@@ -154,7 +154,7 @@ export default function ServiciosNegocio({ negocioId }) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold">Servicios</h2>
         {!editando && (
-          <button onClick={() => setEditando("nuevo")} className="px-4 py-2 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95">
+          <button onClick={() => setEditando("nuevo")} className="px-4 py-2 rounded-lg bg-ya-texto active:bg-ya text-white font-semibold transition hover:bg-ya active:scale-95">
             + Nuevo servicio
           </button>
         )}

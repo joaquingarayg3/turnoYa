@@ -298,7 +298,7 @@ export default function FormNegocio() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-lg bg-ya px-4 py-2 font-semibold text-turno transition hover:brightness-95 disabled:opacity-60"
+            className="rounded-lg bg-ya-texto active:bg-ya px-4 py-2 font-semibold text-white transition hover:bg-ya disabled:opacity-60"
           >
             {isSubmitting ? "Guardando..." : "Guardar negocio"}
           </button>
