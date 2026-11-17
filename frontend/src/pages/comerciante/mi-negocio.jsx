@@ -2,10 +2,11 @@ import { useState } from "react"
 import { Link, useParams } from "wouter"
 import ServiciosNegocio from "../../components/comerciante/servicios-negocio"
 import AgendaNegocio from "../../components/comerciante/agenda-negocio"
+import HorariosNegocio from "../../components/comerciante/horarios-negocio"
 
 // A4 · GET /api/negocios/{id}
 // Pestañas donde el track B monta sus componentes:
-//   Servicios -> B1 / B2   ·   Agenda -> B3
+//   Servicios -> B1 / B2   ·   Horarios -> de atención   ·   Agenda -> B3
 export default function MiNegocio() {
   const { id } = useParams()
   const [pestana, setPestana] = useState("servicios")
@@ -26,10 +27,12 @@ export default function MiNegocio() {
 
       <div className="flex border-b border-borde mb-6">
         <button type="button" className={clasePestana("servicios")} onClick={() => setPestana("servicios")}>Servicios</button>
+        <button type="button" className={clasePestana("horarios")} onClick={() => setPestana("horarios")}>Horarios</button>
         <button type="button" className={clasePestana("agenda")} onClick={() => setPestana("agenda")}>Agenda</button>
       </div>
 
       {pestana === "servicios" && <ServiciosNegocio negocioId={id} />}
+      {pestana === "horarios" && <HorariosNegocio negocioId={id} />}
       {pestana === "agenda" && <AgendaNegocio negocioId={id} />}
     </section>
   )

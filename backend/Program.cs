@@ -74,6 +74,7 @@ builder.Services.AddScoped<UsuariosService>();
 builder.Services.AddScoped<NegociosService>();
 // Track B
 builder.Services.AddScoped<ServiciosService>();
+builder.Services.AddScoped<HorariosService>();
 // Track C
 builder.Services.AddScoped<TurnosService>();
 // Track D

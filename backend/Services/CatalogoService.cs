@@ -35,9 +35,10 @@ public class CatalogoService
         return lista.OrderBy(n => n.Nombre).Select(n => n.ToNegocioDTO(true)).ToList();
     }
 
+    // Detalle con servicios activos y horarios de atencion
     public async Task<NegocioDTO> ObtenerPorId(int id)
     {
-        var negocio = await _repo.ObtenerUno(n => n.Id == id && n.IsActivo, includes: [n => n.Servicios]);
+        var negocio = await _repo.ObtenerUno(n => n.Id == id && n.IsActivo, includes: [n => n.Servicios, n => n.Horarios]);
         if (negocio == null)
         {
             throw new RespuestaError("El negocio no existe o no esta disponible", HttpStatusCode.NotFound);
