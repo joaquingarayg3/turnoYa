@@ -13,38 +13,47 @@ namespace backend.Services;
 // Reglas acordadas por el grupo:
 //  1. Al reservar, el turno queda Pendiente hasta que el dueño lo confirma.
 //  2. Las fechas se manejan en hora local (sin zona horaria).
-//  3. Cada negocio define cada cuantos minutos puede empezar un turno (IntervaloTurnosMinutos).
+//  3. Cada negocio define cada cuantos minutos puede empezar un turno (IntervaloTurnosMinutos)
+//     y la duracion de cada servicio es multiplo de ese intervalo (lo valida ServiciosService).
 //  4. Cada negocio define hasta cuantos dias adelante se reserva (DiasMaxAnticipacion). Nunca en el pasado.
 //  5. Cada negocio define hasta cuantas horas antes puede cancelar el cliente
 //     (HorasToleranciaCancelacion). Despues, solo cancela el dueño.
 //  6. El dueño puede reservar en su propio negocio.
 //  7. Un turno ocupa a TODO el negocio: no puede haber dos turnos superpuestos
 //     en el mismo negocio, aunque sean de servicios distintos.
+//  8. El turno tiene que caer completo dentro de una franja del horario de atencion
+//     (HorarioAtencion). Los horarios disponibles se calculan por servicio, porque
+//     depende de su duracion: con 9 a 12 abierto, un servicio de 60 min no empieza a las 11:30.
 public class TurnosService
 {
     private readonly IRepository<Turno> _repo;
     private readonly IRepository<Servicio> _servicios;
+    private readonly IRepository<HorarioAtencion> _horarios;
     private readonly NegociosService _negociosService;
 
-    public TurnosService(IRepository<Turno> repo, IRepository<Servicio> servicios, NegociosService negociosService)
+    public TurnosService(
+        IRepository<Turno> repo,
+        IRepository<Servicio> servicios,
+        IRepository<HorarioAtencion> horarios,
+        NegociosService negociosService)
     {
         _repo = repo;
         _servicios = servicios;
+        _horarios = horarios;
         _negociosService = negociosService;
+    }
+
+    // Horarios libres de un dia para un servicio: ["09:00", "10:30", ...]
+    public async Task<List<string>> ObtenerDisponibilidad(int servicioId, DateOnly fecha)
+    {
+        var servicio = await ObtenerServicioReservable(servicioId);
+        var inicios = await CalcularInicios(servicio, fecha);
+        return inicios.Select(i => i.ToString("HH:mm")).ToList();
     }
 
     public async Task<TurnoDTO> Reservar(CrearTurnoDTO dto, int clienteId)
     {
-        var servicio = await _servicios.ObtenerUno(s => s.Id == dto.ServicioId, includes: [s => s.Negocio]);
-
-        if (servicio == null)
-        {
-            throw new RespuestaError("El servicio no existe", HttpStatusCode.NotFound);
-        }
-        if (!servicio.IsActivo || !servicio.Negocio.IsActivo)
-        {
-            throw new RespuestaError("El servicio no esta disponible", HttpStatusCode.BadRequest);
-        }
+        var servicio = await ObtenerServicioReservable(dto.ServicioId!.Value);
 
         var negocio = servicio.Negocio;
         int intervalo = negocio.IntervaloTurnosMinutos ?? NegocioDTO.INTERVALO_DEFECTO;
@@ -85,6 +94,16 @@ public class TurnosService
         if (ocupado)
         {
             throw new RespuestaError("Ese horario ya esta ocupado, elegi otro", HttpStatusCode.BadRequest);
+        }
+
+        // Regla 8: se usa el mismo calculo que muestra el front, asi nunca se acepta
+        // un horario que no se ofrecio (ni se rechaza uno que se ofrecio)
+        var disponibles = await CalcularInicios(servicio, DateOnly.FromDateTime(inicio));
+        if (!disponibles.Contains(inicio))
+        {
+            throw new RespuestaError(
+                "Ese horario esta fuera del horario de atencion del negocio (o el servicio no termina antes del cierre)",
+                HttpStatusCode.BadRequest);
         }
 
         var turno = new Turno()
@@ -196,6 +215,74 @@ public class TurnosService
         turno.Estado = EstadoTurno.Cancelado;
         await _repo.Guardar();
         return turno.ToTurnoDTO();
+    }
+
+    // Calcula a que horas puede empezar el servicio ese dia. Un inicio es valido si:
+    //  - cae en la grilla del negocio (Regla 3),
+    //  - el servicio completo entra en una franja de atencion (Regla 8),
+    //  - no esta en el pasado ni mas alla de la anticipacion maxima (Regla 4),
+    //  - no se superpone con otro turno no cancelado del negocio (Regla 7).
+    // Ejemplo: abierto 9 a 12, intervalo 30, ya hay un turno 10:00-10:30.
+    //   Servicio de 30 min -> 09:00, 09:30, 10:30, 11:00, 11:30
+    //   Servicio de 60 min -> 09:00, 10:30, 11:00
+    private async Task<List<DateTime>> CalcularInicios(Servicio servicio, DateOnly fecha)
+    {
+        var negocio = servicio.Negocio;
+        int intervalo = negocio.IntervaloTurnosMinutos ?? NegocioDTO.INTERVALO_DEFECTO;
+        int diasMax = negocio.DiasMaxAnticipacion ?? NegocioDTO.DIAS_DEFECTO;
+        int duracion = servicio.DuracionMinutos;
+
+        DateTime ahora = DateTime.Now;
+        DateTime limite = ahora.AddDays(diasMax);
+        DateTime comienzoDia = fecha.ToDateTime(TimeOnly.MinValue);
+        DateTime finDia = comienzoDia.AddDays(1);
+
+        var franjas = await _horarios.ObtenerTodos(h => h.NegocioId == negocio.Id && h.DiaSemana == fecha.DayOfWeek);
+
+        // Turnos del negocio que tocan ese dia (de cualquier servicio)
+        var ocupados = await _repo.ObtenerTodos(t =>
+            t.Servicio.NegocioId == negocio.Id &&
+            t.Estado != EstadoTurno.Cancelado &&
+            t.FechaHoraInicio < finDia &&
+            t.FechaHoraFin > comienzoDia);
+
+        var inicios = new List<DateTime>();
+        foreach (var franja in franjas.OrderBy(h => h.HoraDesde))
+        {
+            int desde = franja.HoraDesde.Hour * 60 + franja.HoraDesde.Minute;
+            int hasta = franja.HoraHasta.Hour * 60 + franja.HoraHasta.Minute;
+
+            // Primer punto de la grilla dentro de la franja (si abre 9:15 con intervalo 30 -> 9:30)
+            int primero = (desde + intervalo - 1) / intervalo * intervalo;
+
+            for (int minuto = primero; minuto + duracion <= hasta; minuto += intervalo)
+            {
+                DateTime inicio = comienzoDia.AddMinutes(minuto);
+                DateTime fin = inicio.AddMinutes(duracion);
+
+                if (inicio <= ahora || inicio > limite) continue;
+                if (ocupados.Any(t => t.FechaHoraInicio < fin && t.FechaHoraFin > inicio)) continue;
+
+                inicios.Add(inicio);
+            }
+        }
+        return inicios;
+    }
+
+    // El servicio tiene que existir y estar activo, igual que su negocio
+    private async Task<Servicio> ObtenerServicioReservable(int servicioId)
+    {
+        var servicio = await _servicios.ObtenerUno(s => s.Id == servicioId, includes: [s => s.Negocio]);
+
+        if (servicio == null)
+        {
+            throw new RespuestaError("El servicio no existe", HttpStatusCode.NotFound);
+        }
+        if (!servicio.IsActivo || !servicio.Negocio.IsActivo)
+        {
+            throw new RespuestaError("El servicio no esta disponible", HttpStatusCode.BadRequest);
+        }
+        return servicio;
     }
 
     private async Task<Turno> ObtenerConDetalle(int id)
