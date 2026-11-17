@@ -135,7 +135,8 @@ export default function DetalleNegocio() {
 
       {/* Celular: boton de reservar fijo abajo, siempre a mano (arriba de la barra inferior) */}
       {tieneServicios && (
-        <div className="sm:hidden fixed inset-x-0 bottom-16 z-30 border-t border-borde bg-white/95 p-3 backdrop-blur">
+        // Pegado a la barra inferior: 64 px de la barra + la zona del gesto de inicio del iPhone
+        <div className="sm:hidden fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-borde bg-white p-3">
           <Link
             href={`/negocios/${negocio.id}/reservar`}
             className="block w-full rounded-xl bg-ya py-3 text-center font-semibold text-turno active:scale-[0.98]"

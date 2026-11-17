@@ -62,9 +62,10 @@ export default function BarraInferior() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-borde bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+      className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-borde bg-white pb-[env(safe-area-inset-bottom)]"
     >
-      <div className="flex">
+      {/* Alto fijo de 64 px (h-16): el boton fijo de "Reservar turno" se apoya justo encima */}
+      <div className="flex h-16">
         <Item href="/" icono="inicio" texto="Inicio" activo={location === "/" || location.startsWith("/negocios")} />
         {usuario ? (
           <>
