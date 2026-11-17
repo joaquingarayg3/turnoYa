@@ -123,7 +123,8 @@ export default function Agenda() {
       <p className="mt-1 text-pizarra">Los turnos de todos tus negocios, día por día.</p>
 
       {/* Dia elegido: flechas, calendario y atajo a hoy */}
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+      {/* En el celular va todo centrado, uno debajo del otro; en la PC, el dia a la izquierda y los controles a la derecha */}
+      <div className="mt-6 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
         <div>
           <p className="text-lg font-semibold first-letter:uppercase">
             {esHoy ? "Hoy, " : ""}
@@ -142,9 +143,10 @@ export default function Agenda() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          {/* "Hoy" va a la izquierda, lejos de la flecha de avanzar, para no tocarlo sin querer.
-              Si ya se esta en el dia de hoy queda invisible pero ocupa su lugar: asi las flechas no se mueven. */}
+        {/* Celular: "Hoy" arriba y debajo las flechas con la fecha, todo centrado.
+            PC: "Hoy" a la izquierda de las flechas, lejos de la de avanzar para no tocarlo sin querer.
+            Si ya se esta en el dia de hoy, "Hoy" queda invisible pero ocupa su lugar: asi las flechas no se mueven. */}
+        <div className="flex flex-col items-center gap-2 sm:flex-row">
           <button
             onClick={() => setFecha(formatearFecha(new Date()))}
             className={`${claseBoton} ${esHoy ? "invisible" : ""}`}
@@ -153,15 +155,17 @@ export default function Agenda() {
           >
             Hoy
           </button>
-          <button onClick={() => setFecha(sumarDias(fecha, -1))} className={claseBoton} aria-label="Día anterior">←</button>
-          <input
-            type="date"
-            value={fecha}
-            onChange={(e) => e.target.value && setFecha(e.target.value)}
-            className="w-40 rounded-lg border border-borde bg-white px-3 py-1.5"
-            aria-label="Fecha de la agenda"
-          />
-          <button onClick={() => setFecha(sumarDias(fecha, 1))} className={claseBoton} aria-label="Día siguiente">→</button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setFecha(sumarDias(fecha, -1))} className={claseBoton} aria-label="Día anterior">←</button>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => e.target.value && setFecha(e.target.value)}
+              className="w-40 rounded-lg border border-borde bg-white px-3 py-1.5"
+              aria-label="Fecha de la agenda"
+            />
+            <button onClick={() => setFecha(sumarDias(fecha, 1))} className={claseBoton} aria-label="Día siguiente">→</button>
+          </div>
         </div>
       </div>
 
