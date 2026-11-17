@@ -11,6 +11,12 @@ TestResults/
 # Cadena de conexion personal de cada integrante
 appsettings.Development.json
 
+# Configuracion del servidor publicado (conexion a la base de MonsterASP y secreto JWT)
+appsettings.Production.json
+
+# Front compilado que se copia al backend para publicar (se genera con pnpm build)
+backend/wwwroot/
+
 # ---------- Node / Vite ----------
 node_modules/
 dist/
@@ -22,6 +28,7 @@ yarn-debug.log*
 
 # ---------- Editores / SO ----------
 .vscode/*
+backend/.vscode/
 !.vscode/extensions.json
 .idea/
 .DS_Store
@@ -30,5 +37,3 @@ Thumbs.db
 # ---------- Herramientas locales ----------
 .claude/
 CLAUDE.md
-
-backend/.vscode/
