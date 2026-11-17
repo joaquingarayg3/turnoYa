@@ -82,7 +82,7 @@ export default function MisNegocios() {
 
         <Link
           href="/mis-negocios/nuevo"
-          className="inline-flex items-center justify-center self-start rounded-lg bg-ya px-5 py-3 font-semibold text-turno transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-turno"
+          className="inline-flex items-center justify-center self-start rounded-lg bg-ya-texto active:bg-ya px-5 py-3 font-semibold text-white transition hover:bg-ya focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-turno"
         >
           + Nuevo negocio
         </Link>

@@ -344,7 +344,7 @@ export default function NegociosAdmin() {
                       type="button"
                       onClick={() => aprobar(negocio)}
                       disabled={ocupado}
-                      className="text-sm px-3 py-1 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 disabled:opacity-50"
+                      className="text-sm px-3 py-1 rounded-lg bg-ya-texto active:bg-ya text-white font-semibold transition hover:bg-ya disabled:opacity-50"
                     >
                       Aprobar
                     </button>

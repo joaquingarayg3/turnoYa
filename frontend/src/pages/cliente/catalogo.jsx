@@ -146,7 +146,7 @@ export default function Catalogo() {
           <input type="hidden" {...register("rubro")} />
           <button
             type="submit"
-            className="rounded-xl bg-ya px-6 py-3 font-semibold text-turno transition hover:brightness-95 active:scale-95"
+            className="rounded-xl bg-ya-texto active:bg-ya px-6 py-3 font-semibold text-white transition hover:bg-ya active:scale-95"
           >
             Buscar
           </button>

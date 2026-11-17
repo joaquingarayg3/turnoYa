@@ -203,7 +203,7 @@ export default function HorariosNegocio({ negocioId }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-4 py-2 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95 disabled:opacity-50"
+          className="px-4 py-2 rounded-lg bg-ya-texto active:bg-ya text-white font-semibold transition hover:bg-ya active:scale-95 disabled:opacity-50"
         >
           {isSubmitting ? "Guardando..." : "Guardar horarios"}
         </button>
