@@ -9,37 +9,37 @@ import { esquemaReserva } from "../../schemas/turno-schemas";
 import { aFechaHoraLocal, aValorInput } from "../../utils/fechas";
 import { mensajeDeError } from "../../utils/errores";
 
-const dosDigitos = (n) => String(n).padStart(2, "0");
-
-// Horarios del dia cada "intervalo" minutos: "00:00", "00:30", "01:00", ...
-// Asi solo se pueden elegir horarios que encajan con la grilla del negocio.
-function generarHorarios(intervalo) {
-  const horarios = [];
-  for (let minutos = 0; minutos < 24 * 60; minutos += intervalo) {
-    horarios.push(
-      `${dosDigitos(Math.floor(minutos / 60))}:${dosDigitos(minutos % 60)}`,
-    );
-  }
-  return horarios;
-}
-
 // C2 · POST /api/turnos  (los datos del negocio salen de GET /api/catalogo/negocios/{id})
+// Los horarios que se ofrecen salen de GET /api/servicios/{id}/disponibilidad?fecha=:
+// el back ya descarta los que estan fuera del horario de atencion, los ocupados, los pasados
+// y aquellos en los que el servicio no termina antes del cierre.
 export default function Reservar() {
   const { id } = useParams();
   const [, navegar] = useLocation();
   const [negocio, setNegocio] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState("");
+  // Horarios libres y para que servicio + dia son: { clave: "3|2026-11-17|0", lista: ["09:00", ...], error: "" }
+  const [disponibilidad, setDisponibilidad] = useState({
+    clave: "",
+    lista: [],
+    error: "",
+  });
+  // Al cambiar este numero se vuelven a pedir los horarios (por ejemplo, si otro tomo el turno antes)
+  const [recarga, setRecarga] = useState(0);
 
   const {
     register,
     handleSubmit,
     setError,
+    setValue,
     control,
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(esquemaReserva) });
 
-  const diaElegido = useWatch({ control, name: "dia" }); // Se actualiza cada vez que cambia el dia
+  // Se actualizan cada vez que cambia el servicio o el dia
+  const servicioId = useWatch({ control, name: "servicioId" });
+  const diaElegido = useWatch({ control, name: "dia" });
 
   useEffect(() => {
     const controlador = new AbortController(); // Para cancelar el pedido si se sale de la pagina
@@ -67,6 +67,38 @@ export default function Reservar() {
     return () => controlador.abort();
   }, [id]);
 
+  // Cada vez que cambia el servicio o el dia se piden los horarios libres
+  useEffect(() => {
+    if (!servicioId || !diaElegido) return;
+
+    const clave = `${servicioId}|${diaElegido}|${recarga}`;
+    const controlador = new AbortController();
+
+    async function cargarDisponibilidad() {
+      try {
+        const respuesta = await clienteAxios.get(
+          `/servicios/${servicioId}/disponibilidad`,
+          { params: { fecha: diaElegido }, signal: controlador.signal },
+        );
+        setDisponibilidad({ clave, lista: respuesta.data.datos, error: "" });
+      } catch (err) {
+        if (!controlador.signal.aborted) {
+          setDisponibilidad({
+            clave,
+            lista: [],
+            error: mensajeDeError(err, "No se pudieron cargar los horarios."),
+          });
+        }
+      }
+    }
+
+    cargarDisponibilidad();
+    return () => controlador.abort();
+  }, [servicioId, diaElegido, recarga]);
+
+  // Si cambia el servicio o el dia, el horario elegido antes ya no vale
+  const limpiarHora = () => setValue("hora", "");
+
   const onSubmit = async (datos) => {
     try {
       await clienteAxios.post("/turnos", {
@@ -76,8 +108,10 @@ export default function Reservar() {
       });
       navegar("/mis-turnos");
     } catch (err) {
-      // Horario ocupado, fuera de la anticipacion, etc.
+      // Horario ocupado, fuera de la anticipacion, etc. Se refrescan los horarios libres.
       setError("root", { message: mensajeDeError(err) });
+      limpiarHora();
+      setRecarga((n) => n + 1);
     }
   };
 
@@ -103,7 +137,6 @@ export default function Reservar() {
   }
 
   const servicios = negocio.servicios.filter((servicio) => servicio.isActivo);
-  const intervalo = negocio.intervaloTurnosMinutos;
   const dias = negocio.diasMaxAnticipacion;
 
   // El input de tipo "date" usa el formato "2026-11-26": son los primeros 10 caracteres del valor de aValorInput
@@ -113,14 +146,20 @@ export default function Reservar() {
     new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + dias),
   ).slice(0, 10);
 
-  // Si el dia elegido es hoy, se sacan los horarios que ya pasaron
-  const horarios = diaElegido
-    ? generarHorarios(intervalo).filter(
-        (hora) =>
-          diaElegido !== hoy ||
-          new Date(`${diaElegido}T${hora}:00`) > new Date(),
-      )
-    : [];
+  // Estado del selector de horario, segun lo que ya llego del back
+  const claveActual =
+    servicioId && diaElegido ? `${servicioId}|${diaElegido}|${recarga}` : "";
+  const buscandoHorarios =
+    claveActual !== "" && disponibilidad.clave !== claveActual;
+  const horarios =
+    claveActual !== "" && !buscandoHorarios ? disponibilidad.lista : [];
+  const errorHorarios =
+    claveActual !== "" && !buscandoHorarios ? disponibilidad.error : "";
+
+  let textoHorario = "Elegí un horario";
+  if (!claveActual) textoHorario = "Primero elegí el servicio y el día";
+  else if (buscandoHorarios) textoHorario = "Buscando horarios libres...";
+  else if (horarios.length === 0) textoHorario = "No hay horarios libres ese día";
 
   return (
     <section className="max-w-xl mx-auto">
@@ -151,7 +190,7 @@ export default function Reservar() {
                 className={`w-full rounded-lg border bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ya ${
                   errors.servicioId ? "border-red-600" : "border-borde"
                 }`}
-                {...register("servicioId")}
+                {...register("servicioId", { onChange: limpiarHora })}
               >
                 <option value="">Elegí un servicio</option>
                 {servicios.map((servicio) => (
@@ -176,7 +215,7 @@ export default function Reservar() {
               max={ultimoDia}
               ayuda={`Se puede reservar hasta ${dias} días adelante.`}
               error={errors.dia}
-              {...register("dia")}
+              {...register("dia", { onChange: limpiarHora })}
             />
 
             <div>
@@ -185,7 +224,7 @@ export default function Reservar() {
               </label>
               <select
                 id="hora"
-                disabled={!diaElegido}
+                disabled={horarios.length === 0}
                 aria-invalid={errors.hora ? "true" : "false"}
                 className={`w-full rounded-lg border bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ya disabled:opacity-60 ${
                   errors.hora ? "border-red-600" : "border-borde"
@@ -193,7 +232,7 @@ export default function Reservar() {
                 {...register("hora")}
               >
                 <option value="">
-                  {diaElegido ? "Elegí un horario" : "Primero elegí el día"}
+                  {textoHorario}
                 </option>
                 {horarios.map((hora) => (
                   <option key={hora} value={hora}>
@@ -201,9 +240,14 @@ export default function Reservar() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-sm text-pizarra">
-                Los turnos empiezan cada {intervalo} minutos.
-              </p>
+              {errorHorarios ? (
+                <p className="mt-1 text-sm text-red-700">{errorHorarios}</p>
+              ) : (
+                <p className="mt-1 text-sm text-pizarra">
+                  Solo aparecen los horarios libres en los que el servicio
+                  entra completo dentro del horario de atención.
+                </p>
+              )}
               {errors.hora && (
                 <p className="mt-1 text-sm text-red-700">
                   {errors.hora.message}
