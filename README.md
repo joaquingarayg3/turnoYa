@@ -115,9 +115,12 @@ Queda en `http://localhost:5173`. El backend ya tiene CORS habilitado para ese o
 - [x] API de negocios y servicios (panel comerciante, con validación de dueño y baja lógica)
 - [x] API de turnos: reservar, mis turnos, cancelar y agenda del negocio
 - [x] API de catálogo público con búsqueda y filtro por rubro
-- [ ] Frontend: rutas, sesión, login y registro
-- [ ] Frontend: catálogo, detalle y reserva
-- [ ] Frontend: mis negocios, servicios y mis turnos
+- [x] API de horarios de atención y disponibilidad por servicio
+- [x] Frontend: rutas, sesión, login y registro
+- [x] Frontend: catálogo con buscador y filtro por rubro
+- [x] Frontend: detalle del negocio y reserva con horarios libres
+- [x] Frontend: servicios, horarios de atención, agenda y mis turnos
+- [ ] Frontend: mis negocios (listado y formulario)
 
 Fuera de alcance en esta versión: horarios de atención y cálculo de disponibilidad (las tablas existen pero no se usan), panel de admin en el front, paginación y deploy.
 

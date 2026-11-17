@@ -1,3 +1,4 @@
+using backend.Dtos.Horario;
 using backend.Dtos.Servicio;
 
 namespace backend.Dtos.Negocio;
@@ -19,6 +20,9 @@ public class NegocioDTO
     public int HorasToleranciaCancelacion { get; set; }
 
     public List<ServicioDTO> Servicios { get; set; } = new();
+
+    // Horarios de atencion (se completan en el detalle del catalogo)
+    public List<HorarioDTO> Horarios { get; set; } = new();
 
     // Valores por defecto de la configuracion de turnos
     public const int INTERVALO_DEFECTO = 30;
