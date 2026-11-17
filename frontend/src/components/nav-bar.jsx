@@ -65,7 +65,8 @@ export default function NavBar() {
             </>
           ) : (
             <>
-              <Link href="/login" className={claseLink(location === "/login")}>Ingresar</Link>
+              {/* En el celular Ingresar y Crear cuenta estan en la barra inferior: aca solo en la PC */}
+              <Link href="/login" className={`hidden sm:inline-flex ${claseLink(location === "/login")}`}>Ingresar</Link>
               <Link
                 href="/registro"
                 className="hidden sm:inline-flex px-4 py-2 rounded-lg text-sm font-semibold bg-ya-texto active:bg-ya text-white hover:bg-ya transition"
