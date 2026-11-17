@@ -17,6 +17,10 @@ appsettings.Production.json
 # Front compilado que se copia al backend para publicar (se genera con pnpm build)
 backend/wwwroot/
 
+# Perfil de publicacion de Visual Studio (datos del servidor de MonsterASP) y herramientas locales
+backend/Properties/PublishProfiles/
+backend/.config/
+
 # ---------- Node / Vite ----------
 node_modules/
 dist/
