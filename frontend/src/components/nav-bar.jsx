@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter"
 import { useAuth } from "../hooks/use-auth"
 import Logo from "./logo"
+import MenuUsuario from "./menu-usuario"
 
 // Estilo de los links del menu: resalta el de la pagina actual
 const claseLink = (activo) =>
@@ -14,8 +15,8 @@ const claseSelector = (activo) =>
   }`
 
 // Header fijo arriba (sticky).
-// En la PC: logo, selector Cliente/Comerciante, links del panel y sesion.
-// En el celular: solo logo y sesion; la navegacion pasa a la barra inferior (barra-inferior.jsx).
+// En la PC: logo, selector Cliente/Comerciante, links del panel y menu de la cuenta.
+// En el celular: solo logo y menu de la cuenta; la navegacion pasa a la barra inferior (barra-inferior.jsx).
 export default function NavBar() {
   const [location, navegar] = useLocation()
   const { usuario, esAdmin, logout } = useAuth()
@@ -57,20 +58,8 @@ export default function NavBar() {
         <div className="ml-auto flex items-center gap-2">
           {usuario ? (
             <>
-              {/* Solo el staff ve el acceso al panel de administracion (en el celular esta en la barra inferior) */}
-              {esAdmin && (
-                <Link href="/admin" className={`hidden sm:inline-flex ${claseLink(location === "/admin")}`}>Admin</Link>
-              )}
-              <span className="hidden md:inline text-sm text-pizarra">
-                Hola, <span className="font-semibold text-turno">{usuario.nombre}</span>
-              </span>
-              <button
-                type="button"
-                onClick={salir}
-                className="px-3 py-2 rounded-lg text-sm font-medium border border-borde text-turno hover:bg-fondo"
-              >
-                Salir
-              </button>
+              {/* Menu de la cuenta: Panel de administracion (solo staff) y Salir */}
+              <MenuUsuario usuario={usuario} esAdmin={esAdmin} onSalir={salir} />
             </>
           ) : (
             <>
