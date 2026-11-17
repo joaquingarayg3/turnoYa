@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react"
 import { Route, Switch } from "wouter"
 import NavBar from "./components/nav-bar"
+import BarraInferior from "./components/barra-inferior"
 import Footer from "./components/footer"
 import Cargando from "./components/cargando"
 import RutaPrivada from "./components/ruta-privada"
@@ -19,6 +20,9 @@ const MisNegocios = lazy(() => import("./pages/comerciante/mis-negocios"))
 const FormNegocio = lazy(() => import("./pages/comerciante/form-negocio"))
 const MiNegocio = lazy(() => import("./pages/comerciante/mi-negocio"))
 
+// Admin (staff)
+const PanelAdmin = lazy(() => import("./pages/admin/panel-admin"))
+
 // Auth
 const Login = lazy(() => import("./pages/auth/login"))
 const Registro = lazy(() => import("./pages/auth/registro"))
@@ -31,7 +35,8 @@ const NoEncontrado = lazy(() => import("./pages/no-encontrado"))
 // Las rutas que requieren login van envueltas en <RutaPrivada>: sin sesion, mandan al login.
 function App() {
   return (
-    <div className="min-h-screen flex flex-col">
+    // pb-16 en el celular: deja lugar para la barra inferior fija
+    <div className="min-h-screen flex flex-col pb-16 sm:pb-0">
       <NavBar />
 
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
@@ -65,6 +70,11 @@ function App() {
               <RutaPrivada><MiNegocio /></RutaPrivada>
             </Route>
 
+            {/* Admin: requiere login y rol Admin (la pagina lo verifica) */}
+            <Route path="/admin">
+              <RutaPrivada><PanelAdmin /></RutaPrivada>
+            </Route>
+
             {/* Sin path = cualquier otra direccion */}
             <Route component={NoEncontrado} />
           </Switch>
@@ -72,6 +82,7 @@ function App() {
       </main>
 
       <Footer />
+      <BarraInferior />
     </div>
   )
 }

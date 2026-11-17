@@ -22,6 +22,11 @@ public class ActualizarNegocioDTO
     [MaxLength(30, ErrorMessage = "Maximo 30 caracteres")]
     public string? Telefono { get; set; }
 
+    // Link a una imagen de portada (opcional). "" = se borra y se usa la portada del rubro.
+    // El formato (http/https) lo valida NegociosService.
+    [MaxLength(500, ErrorMessage = "Maximo 500 caracteres")]
+    public string? BannerUrl { get; set; }
+
     // Baja / alta logica: false = el negocio deja de verse en el catalogo
     public bool? IsActivo { get; set; }
 

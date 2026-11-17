@@ -1,17 +1,21 @@
 import { Link, useLocation, useParams } from "wouter"
 import { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Campo from "../../components/campo"
 import Cargando from "../../components/cargando"
+import PortadaNegocio from "../../components/portada-negocio"
 import { esquemaNegocio } from "../../schemas/negocio-schemas"
+import { NOMBRES_RUBROS } from "../../utils/rubros"
 import clienteAxios from "../../api/clienteAxios"
 import { mensajeDeError } from "../../utils/errores"
+import { useAvisos } from "../../hooks/use-avisos"
 
 // A2 · POST /api/negocios  y  PUT /api/negocios/{id}
 // La misma pagina sirve para crear (sin id) y para editar (con id)
 export default function FormNegocio() {
   const [, navegar] = useLocation()
+  const { avisar } = useAvisos()
   const { id } = useParams()
   const editando = id !== undefined
   const [cargando, setCargando] = useState(editando) // Solo cargamos si estamos editando
@@ -22,6 +26,7 @@ export default function FormNegocio() {
     handleSubmit,
     setError,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(esquemaNegocio), // Validaciones en src/schemas/negocio-schemas.js
@@ -31,11 +36,16 @@ export default function FormNegocio() {
       descripcion: "",
       direccion: "",
       telefono: "",
+      bannerUrl: "",
       intervaloTurnosMinutos: 30,
       diasMaxAnticipacion: 30,
       horasToleranciaCancelacion: 2,
     },
   })
+
+  // Vista previa de la portada mientras se completa el formulario
+  const rubroElegido = useWatch({ control, name: "rubro" })
+  const bannerElegido = useWatch({ control, name: "bannerUrl" })
 
   useEffect(() => {
     if (!editando) return
@@ -52,10 +62,12 @@ export default function FormNegocio() {
         // Rellenamos el formulario con los datos del negocio
         reset({
           nombre: negocio.nombre,
-          rubro: negocio.rubro,
+          // Si tiene un rubro viejo que no esta en la lista, hay que elegir uno nuevo
+          rubro: NOMBRES_RUBROS.includes(negocio.rubro) ? negocio.rubro : "",
           descripcion: negocio.descripcion ?? "",
           direccion: negocio.direccion ?? "",
           telefono: negocio.telefono ?? "",
+          bannerUrl: negocio.bannerUrl ?? "",
           intervaloTurnosMinutos: negocio.intervaloTurnosMinutos,
           diasMaxAnticipacion: negocio.diasMaxAnticipacion,
           horasToleranciaCancelacion: negocio.horasToleranciaCancelacion,
@@ -89,6 +101,10 @@ export default function FormNegocio() {
 
       const negocioGuardado = respuesta.data.datos
 
+      if (editando) avisar("Cambios guardados.")
+      else if (negocioGuardado.estadoAprobacion === "Pendiente")
+        avisar("Negocio creado. Un administrador lo va a revisar antes de publicarlo.")
+      else avisar("Negocio creado y publicado.")
       navegar(`/mis-negocios/${negocioGuardado.id}`)
     } catch (error) {
       const erroresBackend = error.response?.data?.errors
@@ -157,12 +173,45 @@ export default function FormNegocio() {
           {...register("nombre")}
         />
 
-        <Campo
-          id="rubro"
-          label="Rubro"
-          error={errors.rubro}
-          {...register("rubro")}
-        />
+        <div>
+
+          <label htmlFor="rubro" className="block text-sm font-medium mb-1">Rubro</label>
+
+          {/* Lista cerrada: cada rubro tiene su portada (icono y colores) en el catálogo */}
+
+          <select
+
+            id="rubro"
+
+            aria-invalid={errors.rubro ? "true" : "false"}
+
+            className={`w-full rounded-lg border bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ya ${
+
+              errors.rubro ? "border-red-600" : "border-borde"
+
+            }`}
+
+            {...register("rubro")}
+
+          >
+
+            <option value="">Elegí un rubro</option>
+
+            {NOMBRES_RUBROS.map((rubro) => (
+
+              <option key={rubro} value={rubro}>
+
+                {rubro}
+
+              </option>
+
+            ))}
+
+          </select>
+
+          {errors.rubro && <p className="mt-1 text-sm text-red-700">{errors.rubro.message}</p>}
+
+        </div>
 
         <Campo
           id="descripcion"
@@ -185,6 +234,35 @@ export default function FormNegocio() {
           error={errors.telefono}
           {...register("telefono")}
         />
+        <div>
+
+          <Campo
+
+            id="bannerUrl"
+
+            label="Imagen de portada (opcional)"
+
+            type="url"
+
+            placeholder="https://..."
+
+            ayuda="Pegá el link de una foto de tu negocio. Si lo dejás vacío, se usa la portada de tu rubro."
+
+            error={errors.bannerUrl}
+
+            {...register("bannerUrl")}
+
+          />
+
+          <p className="mt-3 mb-1 text-sm font-medium">Así se va a ver en el catálogo</p>
+
+          <div className="overflow-hidden rounded-xl border border-borde">
+
+            <PortadaNegocio rubro={rubroElegido} imagen={errors.bannerUrl ? "" : bannerElegido?.trim()} alto="h-24" />
+
+          </div>
+
+        </div>
 
         <Campo
           id="intervaloTurnosMinutos"

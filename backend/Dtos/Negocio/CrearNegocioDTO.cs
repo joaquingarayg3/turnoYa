@@ -22,6 +22,11 @@ public class CrearNegocioDTO
     [MaxLength(30, ErrorMessage = "Maximo 30 caracteres")]
     public string? Telefono { get; set; }
 
+    // Link a una imagen de portada (opcional). Vacio = se usa la portada del rubro.
+    // El formato (http/https) lo valida NegociosService.
+    [MaxLength(500, ErrorMessage = "Maximo 500 caracteres")]
+    public string? BannerUrl { get; set; }
+
     // Configuracion de turnos. Opcionales: si no llegan se usan 30 min, 30 dias y 2 horas.
     [Range(5, 240, ErrorMessage = "El intervalo debe estar entre 5 y 240 minutos")]
     public int? IntervaloTurnosMinutos { get; set; }

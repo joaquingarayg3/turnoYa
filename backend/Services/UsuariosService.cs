@@ -1,4 +1,5 @@
 using System.Net;
+using backend.Dtos.Comun;
 using backend.Dtos.Usuario;
 using backend.Enums;
 using backend.Mapping;
@@ -24,7 +25,7 @@ public class UsuariosService
     public async Task<List<UsuarioDTO>> ObtenerTodos()
     {
         var lista = await _repo.ObtenerTodos(includes: [u => u.Roles]);
-        return lista.Select(u => u.ToUsuarioDTO()).ToList();
+        return lista.OrderBy(u => u.Id).Select(u => u.ToUsuarioDTO()).ToList();
     }
 
     public async Task<Usuario> ObtenerUnoPorId(int id)
@@ -70,11 +71,33 @@ public class UsuariosService
         return usuario.ToUsuarioDTO();
     }
 
-    public async Task<UsuarioDTO> ActualizarRolesPorId(int id, ActualizarRolesDTO dto)
+    // adminId = quien hace el cambio (sale del token)
+    public async Task<UsuarioDTO> ActualizarRolesPorId(int id, ActualizarRolesDTO dto, int adminId)
     {
         Usuario usuario = await ObtenerUnoPorId(id);
         var roles = await _rolesService.ObtenerPorIds(dto.RolesIds);
+
+        // Proteccion: el admin no puede quitarse su propio rol (podria quedar la app sin admin)
+        if (id == adminId && !roles.Any(r => r.Nombre == ROL.ADMIN))
+        {
+            throw new RespuestaError("No podes quitarte el rol Admin a vos mismo", HttpStatusCode.BadRequest);
+        }
+
         usuario.Roles = roles;
+        await _repo.ActualizarUno(usuario);
+        return usuario.ToUsuarioDTO();
+    }
+
+    // Admin: baja logica o reactivacion de un usuario
+    public async Task<UsuarioDTO> CambiarEstado(int id, CambiarEstadoDTO dto, int adminId)
+    {
+        if (id == adminId && dto.IsActivo == false)
+        {
+            throw new RespuestaError("No podes darte de baja a vos mismo", HttpStatusCode.BadRequest);
+        }
+
+        Usuario usuario = await ObtenerUnoPorId(id);
+        usuario.IsActivo = dto.IsActivo!.Value;
         await _repo.ActualizarUno(usuario);
         return usuario.ToUsuarioDTO();
     }

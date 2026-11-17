@@ -142,10 +142,10 @@ erDiagram
 
 | Tabla | Para qué sirve | Notas |
 |---|---|---|
-| `Usuarios` | Cuentas de la plataforma | `Email` único; `Clave` guardada como hash BCrypt |
+| `Usuarios` | Cuentas de la plataforma | `Email` único; `Clave` guardada como hash BCrypt; `IsActivo` para baja lógica (la da el Admin) |
 | `Roles` | `Admin` (staff) y `User` | Nombre único |
 | `UsuarioRol` | Relación N:M Usuario ↔ Rol | PK compuesta (`UsuarioId`, `RolId`) |
-| `Negocios` | El turnero de un comerciante | `UsuarioId` = dueño; `IsActivo` para baja lógica |
+| `Negocios` | El turnero de un comerciante | `UsuarioId` = dueño; `Rubro` de una lista cerrada (`Enums/RUBROS.cs`: Barbería y peluquería, Estética y belleza, Salud, Taller mecánico, Gimnasio y deportes, Veterinaria, Otros), que el front usa para elegir la portada; `BannerUrl` opcional (link http/https a una imagen de portada; si no hay, el front genera la portada del rubro); `IsActivo` para baja lógica; `EstadoAprobacion` (Pendiente / Aprobado / Rechazado, como texto) y `MotivoRechazo` |
 | `Servicios` | Lo que ofrece un negocio | `DuracionMinutos` define el largo del turno; `Precio` decimal(10,2) |
 | `HorariosAtencion` | Tramos de atención por día | `DiaSemana` 0 = domingo … 6 = sábado; varios tramos por día permitidos |
 | `Turnos` | Reservas | `ClienteId` → Usuario; `Estado` guardado como texto; índice en (`ServicioId`, `FechaHoraInicio`) |
@@ -275,6 +275,18 @@ if (negocio.UsuarioId != usuarioId)
 
 `User.ObtenerUsuarioId()` está en `Utils/Extensions/ClaimsPrincipalExtensions.cs`.
 
+### Panel Admin (staff)
+
+Los endpoints de administración se validan **por rol** (`[Authorize(Roles = ROL.ADMIN)]`): un usuario común recibe **403**.
+
+- **Roles:** dar o quitar `Admin` a cualquier usuario.
+- **Baja de usuarios (lógica):** un usuario con `IsActivo = false` no puede loguearse ("Tu cuenta está desactivada"), `GET /api/auth/me` le responde 401 (el front cierra la sesión al recargar) y **sus negocios se ocultan del catálogo** y no aceptan reservas. Su token vigente sigue valiendo hasta que vence (120 min).
+- **Aprobación de comercios:** todo negocio nuevo queda **Pendiente** y no aparece en el catálogo ni acepta reservas hasta que un Admin lo **aprueba**. El Admin también puede **rechazarlo con un motivo** (obligatorio), que el dueño ve en "Mis negocios". Si el dueño corrige los datos de un negocio rechazado, vuelve a quedar Pendiente. Los negocios que crea un Admin se aprueban solos, y editar un negocio aprobado no requiere volver a aprobarlo.
+- **Moderación de comercios:** activar o desactivar cualquier negocio, sin importar el dueño.
+
+Un negocio aparece en el catálogo solo si está **aprobado**, **activo** y su **dueño está activo**.
+- **Protecciones:** el admin no puede quitarse su propio rol `Admin` ni darse de baja a sí mismo (la app nunca se queda sin admin).
+
 ---
 
 ## 6. Endpoints disponibles
@@ -285,8 +297,12 @@ if (negocio.UsuarioId != usuarioId)
 | POST | `/api/auth/login` | Público | `LoginDTO` | `{ token, usuario }` |
 | GET | `/api/auth/me` | Logueado | — | `UsuarioDTO` del token |
 | PUT | `/api/auth/roles/{usuarioId}` | Admin | `{ "rolesIds": [1, 2] }` | `UsuarioDTO` actualizado |
-| GET | `/api/usuarios` | Admin | — | Lista de `UsuarioDTO` |
+| GET | `/api/usuarios` | Admin | — | Lista de `UsuarioDTO` (con `isActivo` y roles) |
+| PUT | `/api/usuarios/{id}/estado` | Admin | `{ "isActivo": false }` | `UsuarioDTO` (baja lógica o reactivación) |
 | GET | `/api/usuarios/roles` | Admin | — | Lista de roles |
+| GET | `/api/negocios/todos` | Admin | — | Todos los negocios (los pendientes primero), con `propietarioNombre`, `propietarioEmail`, `propietarioActivo`, servicios y horarios |
+| PUT | `/api/negocios/{id}/estado` | Admin | `{ "isActivo": false }` | `NegocioDTO` (moderación) |
+| PUT | `/api/negocios/{id}/aprobacion` | Admin | `{ "aprobado": true }` o `{ "aprobado": false, "motivo": "..." }` | `NegocioDTO` |
 | GET | `/api/negocios/mios` | Logueado | — | Mis negocios (con sus servicios) |
 | GET | `/api/negocios/{id}` | Dueño | — | `NegocioDTO` |
 | POST | `/api/negocios` | Logueado | `CrearNegocioDTO` | `NegocioDTO` (201) |
@@ -449,6 +465,9 @@ Migraciones actuales:
 |---|---|
 | `inicial` | Crea las 7 tablas, relaciones, índices y el seed (roles + admin) |
 | `ConfigTurnos` | Agrega a `Negocios` la configuración de turnos: intervalo, anticipación máxima y tolerancia de cancelación |
+| `UsuarioActivo` | Agrega `IsActivo` a `Usuarios` (valor por defecto `true`: los usuarios existentes quedan activos) |
+| `AprobacionNegocios` | Agrega `EstadoAprobacion` y `MotivoRechazo` a `Negocios` (valor por defecto `Aprobado`: los negocios existentes siguen visibles) |
+| `BannerNegocio` | Agrega `BannerUrl` (opcional) a `Negocios` |
 
 Reglas del equipo:
 

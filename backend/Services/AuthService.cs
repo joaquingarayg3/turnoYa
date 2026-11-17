@@ -42,6 +42,12 @@ public class AuthService : IAuthService
             throw new RespuestaError("Credenciales invalidas", HttpStatusCode.BadRequest);
         }
 
+        // Se avisa recien despues de validar la clave, para no revelar que cuentas existen
+        if (!usuario.IsActivo)
+        {
+            throw new RespuestaError("Tu cuenta esta desactivada. Comunicate con el administrador", HttpStatusCode.Forbidden);
+        }
+
         return new LoginRespuestaDTO()
         {
             Token = GenerarJwtToken(usuario),

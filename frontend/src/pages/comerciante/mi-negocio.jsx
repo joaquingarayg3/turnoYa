@@ -94,6 +94,21 @@ export default function MiNegocio() {
         </Link>
       </div>
 
+      {/* Moderacion: mientras no este aprobado, el negocio no aparece en el catalogo */}
+      {negocio.estadoAprobacion === "Pendiente" && (
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
+          <span className="font-semibold">Pendiente de aprobación.</span> Un administrador tiene que revisar tu negocio
+          antes de que aparezca en el catálogo. Mientras tanto podés cargar los servicios y los horarios.
+        </p>
+      )}
+      {negocio.estadoAprobacion === "Rechazado" && (
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="status">
+          <span className="font-semibold">Tu negocio fue rechazado:</span> {negocio.motivoRechazo}. Corregí los datos en{" "}
+          <Link href={`/mis-negocios/${id}/editar`} className="font-semibold underline">Editar datos</Link> y vuelve a
+          quedar pendiente de revisión.
+        </p>
+      )}
+
       <div className="flex border-b border-borde mb-6">
         <button type="button" className={clasePestana("servicios")} onClick={() => setPestana("servicios")}>Servicios</button>
         <button type="button" className={clasePestana("horarios")} onClick={() => setPestana("horarios")}>Horarios</button>

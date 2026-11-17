@@ -120,7 +120,8 @@ Queda en `http://localhost:5173`. El backend ya tiene CORS habilitado para ese o
 - [x] Frontend: catálogo con buscador y filtro por rubro
 - [x] Frontend: detalle del negocio y reserva con horarios libres
 - [x] Frontend: servicios, horarios de atención, agenda y mis turnos
-- [ ] Frontend: mis negocios (listado y formulario)
+- [x] Frontend: mis negocios (listado y formulario)
+- [x] Panel de Administración: usuarios (roles y baja lógica), aprobación y moderación de comercios
 
 Fuera de alcance en esta versión: horarios de atención y cálculo de disponibilidad (las tablas existen pero no se usan), panel de admin en el front, paginación y deploy.
 

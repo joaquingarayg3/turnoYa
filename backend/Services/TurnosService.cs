@@ -272,13 +272,17 @@ public class TurnosService
     // El servicio tiene que existir y estar activo, igual que su negocio
     private async Task<Servicio> ObtenerServicioReservable(int servicioId)
     {
-        var servicio = await _servicios.ObtenerUno(s => s.Id == servicioId, includes: [s => s.Negocio]);
+        var servicio = await _servicios.ObtenerUno(s => s.Id == servicioId, includes: [s => s.Negocio, s => s.Negocio.Usuario]);
 
         if (servicio == null)
         {
             throw new RespuestaError("El servicio no existe", HttpStatusCode.NotFound);
         }
-        if (!servicio.IsActivo || !servicio.Negocio.IsActivo)
+        // Tampoco se reserva en negocios sin aprobar o de un dueño dado de baja por el Admin
+        if (!servicio.IsActivo
+            || !servicio.Negocio.IsActivo
+            || servicio.Negocio.EstadoAprobacion != EstadoAprobacion.Aprobado
+            || !servicio.Negocio.Usuario.IsActivo)
         {
             throw new RespuestaError("El servicio no esta disponible", HttpStatusCode.BadRequest);
         }

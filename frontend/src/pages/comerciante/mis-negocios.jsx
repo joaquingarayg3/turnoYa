@@ -2,7 +2,8 @@ import { Link } from "wouter"
 import { useEffect, useState } from "react"
 import clienteAxios from '../../api/clienteAxios'
 import { mensajeDeError } from '../../utils/errores'
-import Cargando from "../../components/cargando"
+import { useAvisos } from "../../hooks/use-avisos"
+import { ListaEsqueleto } from "../../components/esqueleto"
 
 // A1 · GET /api/negocios/mios   ·   A3 · PUT /api/negocios/{id} con { isActivo } (baja lógica)
 export default function MisNegocios() {
@@ -12,6 +13,7 @@ export default function MisNegocios() {
   // Error al activar/desactivar: se muestra arriba de la lista sin ocultarla
   const [errorAccion, setErrorAccion] = useState("")
   const [actualizandoId, setActualizandoId] = useState(null)
+  const { avisar } = useAvisos()
 
   useEffect(() => {
     const controlador = new AbortController(); // Para cancelar la solicitud si el componente se desmonta
@@ -51,6 +53,7 @@ export default function MisNegocios() {
       )
 
       const negocioActualizado = respuesta.data.datos
+      avisar(negocioActualizado.isActivo ? "Negocio activado." : "Negocio desactivado.")
 
       // Reemplaza en la lista el negocio actualizado por el backend conservando los demás y sin recargar la pagina.
       setNegocios((actuales) =>
@@ -85,7 +88,7 @@ export default function MisNegocios() {
         </Link>
       </div>
 
-      {cargando && <Cargando texto="Cargando negocios..." />}
+      {cargando && <ListaEsqueleto />}
 
       {error && (
         <p role="alert" className="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
@@ -135,6 +138,18 @@ export default function MisNegocios() {
                     {negocio.isActivo ? "Activo" : "Inactivo"}
                   </span>
                 </div>
+
+                {/* Moderacion: un negocio nuevo espera la aprobacion de un Admin */}
+                {negocio.estadoAprobacion === "Pendiente" && (
+                  <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    Pendiente de aprobación: todavía no aparece en el catálogo.
+                  </p>
+                )}
+                {negocio.estadoAprobacion === "Rechazado" && (
+                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    Rechazado: {negocio.motivoRechazo}. Corregilo en "Editar datos" y vuelve a revisión.
+                  </p>
+                )}
 
                 <p className="mt-4 text-sm text-pizarra">
                   {negocio.direccion || "Sin dirección registrada"}

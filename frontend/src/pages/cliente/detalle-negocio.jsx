@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
 import { Link, useParams } from "wouter"
 import clienteAxios from "../../api/clienteAxios"
-import Cargando from "../../components/cargando"
+import { DetalleEsqueleto } from "../../components/esqueleto"
+import PortadaNegocio from "../../components/portada-negocio"
 import { DIAS_SEMANA, horaCorta } from "../../utils/dias"
 import { mensajeDeError } from "../../utils/errores"
 
@@ -31,7 +32,7 @@ export default function DetalleNegocio() {
     cargarNegocio()
   }, [id])
 
-  if (cargando) return <Cargando texto="Cargando negocio..." />
+  if (cargando) return <DetalleEsqueleto />
 
   if (error) {
     return (
@@ -47,34 +48,38 @@ export default function DetalleNegocio() {
   const tieneServicios = negocio.servicios.length > 0
 
   return (
-    <section className="space-y-6">
+    // pb-24 en el celular: deja lugar para el boton fijo de reservar
+    <section className="space-y-6 pb-24 sm:pb-0">
       <Link href="/" className="text-sm font-medium text-ya-texto hover:underline">
         ← Volver al catálogo
       </Link>
 
-      {/* Encabezado: datos del negocio y boton para reservar */}
-      <div className="flex flex-wrap items-start justify-between gap-4 p-6 bg-white rounded-2xl border border-borde">
-        <div className="max-w-2xl">
-          <span className="inline-block text-xs font-medium px-2 py-1 rounded-full bg-fondo text-pizarra border border-borde">
-            {negocio.rubro}
-          </span>
-          <h1 className="mt-2 text-3xl font-bold">{negocio.nombre}</h1>
-          {negocio.descripcion && <p className="mt-2 text-pizarra">{negocio.descripcion}</p>}
-          {(negocio.direccion || negocio.telefono) && (
-            <p className="mt-2 text-sm text-pizarra">
-              {[negocio.direccion, negocio.telefono].filter(Boolean).join(" · ")}
-            </p>
+      {/* Encabezado: portada segun el rubro, datos del negocio y boton para reservar */}
+      <div className="overflow-hidden bg-white rounded-2xl border border-borde">
+        <PortadaNegocio rubro={negocio.rubro} imagen={negocio.bannerUrl} alto="h-36 sm:h-44" />
+        <div className="flex flex-wrap items-start justify-between gap-4 p-6">
+          <div className="max-w-2xl">
+            <span className="inline-block text-xs font-medium px-2 py-1 rounded-full bg-fondo text-pizarra border border-borde">
+              {negocio.rubro}
+            </span>
+            <h1 className="mt-2 text-3xl font-bold">{negocio.nombre}</h1>
+            {negocio.descripcion && <p className="mt-2 text-pizarra">{negocio.descripcion}</p>}
+            {(negocio.direccion || negocio.telefono) && (
+              <p className="mt-2 text-sm text-pizarra">
+                {[negocio.direccion, negocio.telefono].filter(Boolean).join(" · ")}
+              </p>
+            )}
+          </div>
+
+          {tieneServicios && (
+            <Link
+              href={`/negocios/${negocio.id}/reservar`}
+              className="hidden sm:inline-flex px-5 py-2.5 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95"
+            >
+              Reservar turno
+            </Link>
           )}
         </div>
-
-        {tieneServicios && (
-          <Link
-            href={`/negocios/${negocio.id}/reservar`}
-            className="px-5 py-2.5 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95"
-          >
-            Reservar turno
-          </Link>
-        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-[3fr_2fr]">
@@ -127,6 +132,18 @@ export default function DetalleNegocio() {
           )}
         </div>
       </div>
+
+      {/* Celular: boton de reservar fijo abajo, siempre a mano (arriba de la barra inferior) */}
+      {tieneServicios && (
+        <div className="sm:hidden fixed inset-x-0 bottom-16 z-30 border-t border-borde bg-white/95 p-3 backdrop-blur">
+          <Link
+            href={`/negocios/${negocio.id}/reservar`}
+            className="block w-full rounded-xl bg-ya py-3 text-center font-semibold text-turno active:scale-[0.98]"
+          >
+            Reservar turno
+          </Link>
+        </div>
+      )}
     </section>
   )
 }

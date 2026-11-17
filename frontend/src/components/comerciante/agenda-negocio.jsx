@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import clienteAxios from "../../api/clienteAxios"
 import { mensajeDeError } from "../../utils/errores"
+import { useAvisos } from "../../hooks/use-avisos"
 import Cargando from "../cargando"
 
 // Mismo orden que el enum EstadoTurno del backend (por si llega como número)
@@ -44,6 +45,7 @@ export default function AgendaNegocio({ negocioId }) {
   const [procesando, setProcesando] = useState(null) // id del turno que se está confirmando/cancelando
   // Al cambiar este numero se vuelve a pedir la agenda
   const [recarga, setRecarga] = useState(0)
+  const { avisar } = useAvisos()
 
   // Patron del modulo 08: la funcion async se define dentro del efecto.
   // Se vuelve a ejecutar cuando cambia el negocio, el dia elegido o despues de una accion.
@@ -77,6 +79,7 @@ export default function AgendaNegocio({ negocioId }) {
     setErrorAccion(null)
     try {
       await clienteAxios.put(`/turnos/${turno.id}/${accion}`)
+      avisar(accion === "confirmar" ? "Turno confirmado." : "Turno cancelado.")
       setRecarga((n) => n + 1)
     } catch (err) {
       setErrorAccion(mensajeDeError(err, `No se pudo ${accion} el turno.`))

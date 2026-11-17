@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using backend.Enums;
 using backend.Models;
 
 namespace backend.Config;
@@ -19,6 +20,11 @@ public class AppDbContext : DbContext
         // ---------- Usuario / Rol (N:M) ----------
         modelBuilder.Entity<Usuario>().HasIndex(u => u.Email).IsUnique();
         modelBuilder.Entity<Rol>().HasIndex(r => r.Nombre).IsUnique();
+
+        // Los usuarios que ya existian al agregar la columna quedan activos.
+        // HasSentinel(true): EF solo deja de mandar el valor cuando es true (el default de la base),
+        // asi un usuario se puede guardar como inactivo sin que la base lo pise.
+        modelBuilder.Entity<Usuario>().Property(u => u.IsActivo).HasDefaultValue(true).HasSentinel(true);
 
         modelBuilder.Entity<Usuario>()
             .HasMany(u => u.Roles).WithMany()
@@ -69,6 +75,16 @@ public class AppDbContext : DbContext
             .HasForeignKey(t => t.ServicioId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Estado de aprobacion guardado como texto. Los negocios que ya existian al agregar
+        // la columna quedan Aprobados (valor por defecto de la base). HasSentinel: EF solo deja de
+        // mandar el valor cuando es Aprobado, asi un negocio nuevo se guarda como Pendiente.
+        modelBuilder.Entity<Negocio>()
+            .Property(n => n.EstadoAprobacion)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(EstadoAprobacion.Aprobado)
+            .HasSentinel(EstadoAprobacion.Aprobado);
+
         modelBuilder.Entity<Turno>()
             .Property(t => t.Estado)
             .HasConversion<string>()
@@ -94,7 +110,8 @@ public class AppDbContext : DbContext
                 Apellido = "TurnoYa",
                 Email = "admin@turnoya.com",
                 Clave = "$2a$13$zv/0tBtb8HX9yrkYHVQFt.FxUSRgs7QGLTGRdIFb.uJpPc5v8j7FC",
-                FechaRegistro = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                FechaRegistro = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                IsActivo = true
             }
         );
 

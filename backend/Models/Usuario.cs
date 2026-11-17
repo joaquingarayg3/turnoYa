@@ -26,6 +26,9 @@ public class Usuario
 
     public DateTime FechaRegistro { get; set; }
 
+    // Baja logica: un usuario inactivo no puede loguearse y sus negocios no aparecen en el catalogo
+    public bool IsActivo { get; set; } = true;
+
     public List<Rol> Roles { get; set; } = new();
     public List<Negocio> Negocios { get; set; } = new();
     public List<Turno> Turnos { get; set; } = new();

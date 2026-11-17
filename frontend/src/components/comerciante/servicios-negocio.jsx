@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import clienteAxios from "../../api/clienteAxios"
 import { esquemaServicio } from "../../schemas/servicio-schemas"
 import { mensajeDeError } from "../../utils/errores"
+import { useAvisos } from "../../hooks/use-avisos"
 import Campo from "../campo"
 import Cargando from "../cargando"
 
@@ -96,6 +97,7 @@ export default function ServiciosNegocio({ negocioId }) {
   const [editando, setEditando] = useState(null)
   // Al cambiar este numero se vuelven a pedir los servicios
   const [recarga, setRecarga] = useState(0)
+  const { avisar } = useAvisos()
 
   // Patron del modulo 08: la funcion async se define dentro del efecto
   useEffect(() => {
@@ -124,6 +126,7 @@ export default function ServiciosNegocio({ negocioId }) {
     } else {
       await clienteAxios.put(`/servicios/${editando.id}`, datos)
     }
+    avisar(editando === "nuevo" ? "Servicio creado." : "Servicio actualizado.")
     setEditando(null)
     setRecarga((n) => n + 1)
   }
@@ -133,6 +136,7 @@ export default function ServiciosNegocio({ negocioId }) {
     setErrorAccion(null)
     try {
       await clienteAxios.put(`/servicios/${servicio.id}`, { isActivo: !servicio.isActivo })
+      avisar(servicio.isActivo ? "Servicio desactivado." : "Servicio activado.")
       setRecarga((n) => n + 1)
     } catch (err) {
       setErrorAccion(mensajeDeError(err, "No se pudo cambiar el estado del servicio."))
