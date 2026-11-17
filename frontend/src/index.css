@@ -14,6 +14,19 @@
   --color-pizarra: #4A5468;    /* Gris pizarra: texto secundario */
   --color-fondo: #F4F6FA;      /* Fondo claro: fondo de pantalla y tarjetas */
   --color-borde: #DDE2EC;      /* Bordes y separadores */
+
+  /* Avisos (toasts): entran deslizandose y se van desvaneciendo, sin cortes bruscos */
+  --animate-aviso-entrar: aviso-entrar 250ms ease-out;
+  --animate-aviso-salir: aviso-salir 250ms ease-in forwards;
+
+  @keyframes aviso-entrar {
+    from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes aviso-salir {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: translateY(-12px) scale(0.98); }
+  }
 }
 
 @layer base {
