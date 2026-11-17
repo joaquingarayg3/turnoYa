@@ -32,5 +32,20 @@
     button {
       min-height: 44px;
     }
+
+    /* Safari de iPhone le da a los campos de fecha y hora un ancho propio que no respeta
+       el w-full: sin su apariencia nativa ocupan el mismo ancho que el resto */
+    input[type="date"],
+    input[type="time"] {
+      -webkit-appearance: none;
+      appearance: none;
+      display: block;
+      min-width: 0;
+      max-width: 100%;
+    }
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="time"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
   }
 }

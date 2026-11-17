@@ -36,7 +36,7 @@ const NoEncontrado = lazy(() => import("./pages/no-encontrado"))
 function App() {
   return (
     // pb-16 en el celular: deja lugar para la barra inferior fija
-    <div className="min-h-screen flex flex-col pb-16 sm:pb-0">
+    <div className="min-h-screen flex flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0">
       <NavBar />
 
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
