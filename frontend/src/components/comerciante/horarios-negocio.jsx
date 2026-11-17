@@ -5,6 +5,7 @@ import clienteAxios from "../../api/clienteAxios"
 import { esquemaHorarios } from "../../schemas/horario-schemas"
 import { DIAS_SEMANA, horaCorta } from "../../utils/dias"
 import { mensajeDeError } from "../../utils/errores"
+import { useAvisos } from "../../hooks/use-avisos"
 import Cargando from "../cargando"
 
 const DIAS_HABILES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
@@ -23,6 +24,7 @@ export default function HorariosNegocio({ negocioId }) {
   const [cargando, setCargando] = useState(true)
   const [errorCarga, setErrorCarga] = useState(null)
   const [guardado, setGuardado] = useState(false)
+  const { avisar } = useAvisos()
 
   const {
     register,
@@ -69,6 +71,7 @@ export default function HorariosNegocio({ negocioId }) {
       const respuesta = await clienteAxios.put(`/negocios/${negocioId}/horarios`, franjas)
       reset({ franjas: respuesta.data.datos.map(aFormulario) })
       setGuardado(true)
+      avisar("Horarios guardados.")
     } catch (err) {
       setError("root", { message: mensajeDeError(err, "No se pudieron guardar los horarios.") })
     }

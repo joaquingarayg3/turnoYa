@@ -4,6 +4,7 @@ import { Link, Redirect, useLocation } from "wouter"
 import { useAuth } from "../../hooks/use-auth"
 import { esquemaRegistro } from "../../schemas/auth-schemas"
 import { mensajeDeError } from "../../utils/errores"
+import { useAvisos } from "../../hooks/use-avisos"
 import Campo from "../../components/campo"
 import { Isotipo } from "../../components/logo"
 
@@ -11,6 +12,7 @@ import { Isotipo } from "../../components/logo"
 export default function Registro() {
   const { usuario, registrar } = useAuth()
   const [, navegar] = useLocation()
+  const { avisar } = useAvisos()
 
   const {
     register,
@@ -32,6 +34,7 @@ export default function Registro() {
         clave: datos.clave,
         telefono: datos.telefono || undefined,
       })
+      avisar(`¡Bienvenido/a a TurnoYa, ${datos.nombre}!`)
       navegar("/")
     } catch (error) {
       setError("root", { message: mensajeDeError(error) })

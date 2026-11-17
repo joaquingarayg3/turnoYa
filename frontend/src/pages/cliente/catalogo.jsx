@@ -3,7 +3,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Link } from "wouter"
 import clienteAxios from "../../api/clienteAxios"
-import Cargando from "../../components/cargando"
+import { TarjetasEsqueleto } from "../../components/esqueleto"
+import PortadaNegocio, { IconoRubro } from "../../components/portada-negocio"
 import { esquemaBusqueda } from "../../schemas/catalogo-schemas"
 import { mensajeDeError } from "../../utils/errores"
 
@@ -22,17 +23,20 @@ function TarjetaNegocio({ negocio }) {
     <li>
       <Link
         href={`/negocios/${negocio.id}`}
-        className="flex h-full flex-col p-5 bg-white rounded-2xl border border-borde transition hover:border-ya hover:shadow-sm"
+        className="flex h-full flex-col overflow-hidden bg-white rounded-2xl border border-borde transition hover:border-ya hover:shadow-sm"
       >
-        <span className="self-start text-xs font-medium px-2 py-1 rounded-full bg-fondo text-pizarra border border-borde">
-          {negocio.rubro}
-        </span>
-        <h2 className="mt-3 text-lg font-bold">{negocio.nombre}</h2>
-        {negocio.descripcion && <p className="mt-1 text-sm text-pizarra line-clamp-2">{negocio.descripcion}</p>}
-        {negocio.direccion && <p className="mt-2 text-sm text-pizarra">{negocio.direccion}</p>}
-        <div className="mt-auto pt-4 flex items-center justify-between gap-2 text-sm">
-          <span className="text-pizarra">{resumenServicios(negocio.servicios)}</span>
-          <span className="font-semibold text-ya-texto whitespace-nowrap">Ver turnos →</span>
+        <PortadaNegocio rubro={negocio.rubro} imagen={negocio.bannerUrl} alto="h-24" />
+        <div className="flex flex-1 flex-col p-5">
+          <span className="self-start text-xs font-medium px-2 py-1 rounded-full bg-fondo text-pizarra border border-borde">
+            {negocio.rubro}
+          </span>
+          <h2 className="mt-3 text-lg font-bold">{negocio.nombre}</h2>
+          {negocio.descripcion && <p className="mt-1 text-sm text-pizarra line-clamp-2">{negocio.descripcion}</p>}
+          {negocio.direccion && <p className="mt-2 text-sm text-pizarra">{negocio.direccion}</p>}
+          <div className="mt-auto pt-4 flex items-center justify-between gap-2 text-sm">
+            <span className="text-pizarra">{resumenServicios(negocio.servicios)}</span>
+            <span className="font-semibold text-ya-texto whitespace-nowrap">Ver turnos →</span>
+          </div>
         </div>
       </Link>
     </li>
@@ -53,10 +57,11 @@ export default function Catalogo() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm({ resolver: zodResolver(esquemaBusqueda), defaultValues: SIN_FILTROS })
 
-  // Rubros para el filtro: se piden una sola vez. Si fallan, el filtro queda en "Todos los rubros".
+  // Rubros con negocios publicados, para los botones de filtro. Si fallan, no se muestran.
   useEffect(() => {
     const cargarRubros = async () => {
       try {
@@ -99,58 +104,84 @@ export default function Catalogo() {
 
   const hayFiltros = filtros.busqueda !== "" || filtros.rubro !== ""
 
+  // Al tocar un rubro se aplica enseguida, junto con el texto que haya en el buscador
+  const elegirRubro = (rubro) => {
+    setValue("rubro", rubro)
+    handleSubmit(buscar)()
+  }
+
+  const claseChip = (activo) =>
+    `shrink-0 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+      activo ? "border-turno bg-turno text-white" : "border-borde bg-white text-turno hover:border-ya"
+    }`
+
   return (
     <section>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Encontrá dónde sacar tu turno</h1>
-        <p className="mt-1 text-pizarra">Buscá un negocio, elegí el servicio y reservá el horario que te quede cómodo.</p>
+      {/* Portada del catalogo con el buscador */}
+      <div
+        className="relative overflow-hidden rounded-3xl bg-turno px-6 py-10 sm:px-10 sm:py-14 mb-6"
+        style={{
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.08) 1.5px, transparent 1.5px)",
+          backgroundSize: "18px 18px",
+        }}
+      >
+        <p className="text-sm font-semibold text-ya">Pedí tu turno, ya.</p>
+        <h1 className="mt-2 max-w-xl text-3xl font-bold text-white sm:text-4xl">Encontrá dónde sacar tu turno</h1>
+        <p className="mt-2 max-w-xl text-borde">Buscá un negocio, elegí el servicio y reservá el horario que te quede cómodo.</p>
+
+        {/* Buscador: el texto se aplica al tocar Buscar o Enter; el rubro, apenas se elige */}
+        <form onSubmit={handleSubmit(buscar)} className="mt-6 flex max-w-2xl flex-col gap-3 sm:flex-row" noValidate>
+          <div className="flex-1">
+            <input
+              type="search"
+              placeholder="Nombre o descripción del negocio"
+              aria-label="Buscar negocios"
+              className={`w-full rounded-xl border bg-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ya ${
+                errors.busqueda ? "border-red-600" : "border-transparent"
+              }`}
+              {...register("busqueda")}
+            />
+            {errors.busqueda && <p className="mt-1 text-sm text-red-200">{errors.busqueda.message}</p>}
+          </div>
+          <input type="hidden" {...register("rubro")} />
+          <button
+            type="submit"
+            className="rounded-xl bg-ya px-6 py-3 font-semibold text-turno transition hover:brightness-95 active:scale-95"
+          >
+            Buscar
+          </button>
+        </form>
       </div>
 
-      {/* Buscador: el rubro se aplica apenas se elige; el texto, al tocar Buscar o Enter */}
-      <form onSubmit={handleSubmit(buscar)} className="flex flex-wrap items-start gap-3 mb-6" noValidate>
-        <div className="flex-1 min-w-56">
-          <input
-            type="search"
-            placeholder="Nombre o descripción del negocio"
-            aria-label="Buscar negocios"
-            className={`w-full rounded-lg border bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ya ${
-              errors.busqueda ? "border-red-600" : "border-borde"
-            }`}
-            {...register("busqueda")}
-          />
-          {errors.busqueda && <p className="mt-1 text-sm text-red-700">{errors.busqueda.message}</p>}
-        </div>
-        <select
-          aria-label="Filtrar por rubro"
-          className="rounded-lg border border-borde bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ya"
-          {...register("rubro", { onChange: () => handleSubmit(buscar)() })}
-        >
-          <option value="">Todos los rubros</option>
-          {rubros.map((rubro) => (
-            <option key={rubro} value={rubro}>
-              {rubro}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          className="px-4 py-2 rounded-lg bg-ya text-turno font-semibold transition hover:brightness-95 active:scale-95"
-        >
-          Buscar
-        </button>
-        {hayFiltros && (
-          <button
-            type="button"
-            onClick={limpiar}
-            className="px-4 py-2 rounded-lg border border-borde transition hover:bg-fondo"
-          >
-            Limpiar
+      {/* Rubros como botones con su icono: en el celular se deslizan de costado */}
+      {rubros.length > 0 && (
+        <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" aria-label="Filtrar por rubro">
+          <button type="button" onClick={() => elegirRubro("")} className={claseChip(filtros.rubro === "")}>
+            Todos
           </button>
-        )}
-      </form>
+          {rubros.map((rubro) => (
+            <button
+              key={rubro}
+              type="button"
+              onClick={() => elegirRubro(rubro)}
+              aria-pressed={filtros.rubro === rubro}
+              className={claseChip(filtros.rubro === rubro)}
+            >
+              <IconoRubro rubro={rubro} className="h-4 w-4" />
+              {rubro}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {hayFiltros && (
+        <button type="button" onClick={limpiar} className="mb-4 text-sm font-medium text-ya-texto hover:underline">
+          Limpiar filtros
+        </button>
+      )}
 
       {cargando ? (
-        <Cargando texto="Buscando negocios..." />
+        <TarjetasEsqueleto />
       ) : error ? (
         <p className="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200" role="alert">
           {error}

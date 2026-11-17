@@ -57,6 +57,10 @@ namespace backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BannerUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Descripcion")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -68,6 +72,13 @@ namespace backend.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("EstadoAprobacion")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Aprobado");
+
                     b.Property<int?>("HorasToleranciaCancelacion")
                         .HasColumnType("int");
 
@@ -76,6 +87,10 @@ namespace backend.Migrations
 
                     b.Property<bool>("IsActivo")
                         .HasColumnType("bit");
+
+                    b.Property<string>("MotivoRechazo")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -237,6 +252,11 @@ namespace backend.Migrations
                     b.Property<DateTime>("FechaRegistro")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsActivo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -261,6 +281,7 @@ namespace backend.Migrations
                             Clave = "$2a$13$zv/0tBtb8HX9yrkYHVQFt.FxUSRgs7QGLTGRdIFb.uJpPc5v8j7FC",
                             Email = "admin@turnoya.com",
                             FechaRegistro = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActivo = true,
                             Nombre = "Admin"
                         });
                 });

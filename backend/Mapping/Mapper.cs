@@ -20,6 +20,7 @@ public static class Mapper
         Email = u.Email,
         Telefono = u.Telefono,
         FechaRegistro = u.FechaRegistro,
+        IsActivo = u.IsActivo,
         Roles = u.Roles.Select(r => r.Nombre).ToList()
     };
 
@@ -44,7 +45,14 @@ public static class Mapper
         Rubro = n.Rubro,
         Direccion = n.Direccion,
         Telefono = n.Telefono,
+        BannerUrl = n.BannerUrl,
         IsActivo = n.IsActivo,
+        EstadoAprobacion = n.EstadoAprobacion,
+        MotivoRechazo = n.MotivoRechazo,
+        // n.Usuario solo viene cargado en el listado del Admin
+        PropietarioNombre = n.Usuario == null ? null : $"{n.Usuario.Nombre} {n.Usuario.Apellido}",
+        PropietarioEmail = n.Usuario?.Email,
+        PropietarioActivo = n.Usuario?.IsActivo,
         IntervaloTurnosMinutos = n.IntervaloTurnosMinutos ?? NegocioDTO.INTERVALO_DEFECTO,
         DiasMaxAnticipacion = n.DiasMaxAnticipacion ?? NegocioDTO.DIAS_DEFECTO,
         HorasToleranciaCancelacion = n.HorasToleranciaCancelacion ?? NegocioDTO.TOLERANCIA_DEFECTO,

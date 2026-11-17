@@ -24,4 +24,13 @@
   h1, h2, h3 {
     @apply font-display tracking-tight;
   }
+
+  /* En el celular, campos y botones de al menos 44 px de alto: comodos para el dedo */
+  @media (max-width: 639px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    button {
+      min-height: 44px;
+    }
+  }
 }

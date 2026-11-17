@@ -1,5 +1,6 @@
 using backend.Dtos.Horario;
 using backend.Dtos.Servicio;
+using backend.Enums;
 
 namespace backend.Dtos.Negocio;
 
@@ -12,7 +13,17 @@ public class NegocioDTO
     public string Rubro { get; set; } = string.Empty;
     public string? Direccion { get; set; }
     public string? Telefono { get; set; }
+    public string? BannerUrl { get; set; }
     public bool IsActivo { get; set; }
+
+    // Moderacion: "Pendiente", "Aprobado" o "Rechazado" (con el motivo)
+    public EstadoAprobacion EstadoAprobacion { get; set; }
+    public string? MotivoRechazo { get; set; }
+
+    // Datos del dueño: solo se completan en el listado del Admin (consulta con n.Usuario incluido)
+    public string? PropietarioNombre { get; set; }
+    public string? PropietarioEmail { get; set; }
+    public bool? PropietarioActivo { get; set; }
 
     // Siempre con valor: si el negocio no lo configuro, va el valor por defecto
     public int IntervaloTurnosMinutos { get; set; }

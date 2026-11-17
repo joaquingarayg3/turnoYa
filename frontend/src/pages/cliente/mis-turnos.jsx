@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 
 import clienteAxios from "../../api/clienteAxios";
-import Cargando from "../../components/cargando";
-import { esFuturo, formatearFechaHora } from "../../utils/fechas";
+import { ListaEsqueleto } from "../../components/esqueleto";
+import { useAvisos } from "../../hooks/use-avisos";
+import { esFuturo, formatearFechaHora, formatearHora } from "../../utils/fechas";
 import { mensajeDeError } from "../../utils/errores";
 
 // Mismos colores de estado que la agenda del comerciante (B3)
@@ -27,45 +28,73 @@ const esProximo = (turno) =>
   esFuturo(turno.fechaHoraInicio) &&
   (turno.estado === "Pendiente" || turno.estado === "Confirmado");
 
+// Partes de la fecha para el bloque tipo calendario: "MAR", "17", "NOV", "10:30"
+function partesFecha(iso) {
+  const fecha = new Date(iso);
+  const corto = (opciones) => fecha.toLocaleString("es-AR", opciones).replace(".", "").toUpperCase();
+  return {
+    diaSemana: corto({ weekday: "short" }),
+    dia: fecha.getDate(),
+    mes: corto({ month: "short" }),
+    hora: formatearHora(iso),
+  };
+}
+
 function TarjetaTurno({ turno, puedeCancelar, cancelando, onCancelar }) {
+  const fecha = partesFecha(turno.fechaHoraInicio);
+  const estado = estadoVisible(turno);
+  const apagado = !puedeCancelar; // pasados y cancelados se ven mas suaves
+
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded-xl border border-borde">
-      <div>
-        <p className="font-semibold">{turno.servicioNombre}</p>
-        <p className="text-pizarra">
-          {turno.negocioNombre}
-          {turno.negocioDireccion && ` · ${turno.negocioDireccion}`}
-        </p>
-        <p className="mt-1 first-letter:uppercase">
-          {formatearFechaHora(turno.fechaHoraInicio)}
-        </p>
-        <p className="text-sm text-pizarra">
-          ${turno.servicioPrecio.toLocaleString("es-AR")}
-        </p>
-        {turno.notas && (
-          <p className="mt-1 text-sm text-pizarra">Notas: {turno.notas}</p>
-        )}
+    <li className="flex items-stretch gap-4 p-4 bg-white rounded-2xl border border-borde">
+      {/* Bloque de fecha tipo calendario */}
+      <div
+        className={`flex w-16 shrink-0 flex-col items-center justify-center rounded-xl py-2 ${
+          apagado ? "bg-fondo text-pizarra" : "bg-turno text-white"
+        }`}
+        aria-label={formatearFechaHora(turno.fechaHoraInicio)}
+      >
+        <span className="text-[11px] font-semibold tracking-wide opacity-80">{fecha.diaSemana}</span>
+        <span className="font-display text-2xl font-bold leading-none">{fecha.dia}</span>
+        <span className={`text-[11px] font-semibold tracking-wide ${apagado ? "" : "text-ya"}`}>{fecha.mes}</span>
       </div>
 
-      <div className="flex items-center gap-3">
-        <span
-          className={`text-sm px-3 py-1 rounded-full ${
-            estadoVisible(turno) === "Sin confirmar"
-              ? COLOR_SIN_CONFIRMAR
-              : COLORES_ESTADO[turno.estado]
-          }`}
-        >
-          {estadoVisible(turno)}
-        </span>
-        {puedeCancelar && (
-          <button
-            onClick={() => onCancelar(turno)}
-            disabled={cancelando}
-            className="text-sm px-3 py-1 rounded-lg border border-borde transition hover:bg-gray-200 disabled:opacity-50"
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 sm:flex-row sm:items-center">
+        <div className="min-w-0">
+          <p className="font-semibold">
+            <span className={apagado ? "text-pizarra" : "text-ya-texto"}>{fecha.hora}</span> · {turno.servicioNombre}
+          </p>
+          <p className="text-sm text-pizarra">
+            {turno.negocioNombre}
+            {turno.negocioDireccion && ` · ${turno.negocioDireccion}`}
+          </p>
+          <p className="text-sm text-pizarra">
+            ${turno.servicioPrecio.toLocaleString("es-AR")}
+          </p>
+          {turno.notas && (
+            <p className="mt-1 text-sm text-pizarra italic">“{turno.notas}”</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span
+            className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+              estado === "Sin confirmar" ? COLOR_SIN_CONFIRMAR : COLORES_ESTADO[turno.estado]
+            }`}
           >
-            {cancelando ? "Cancelando..." : "Cancelar"}
-          </button>
-        )}
+            {estado}
+          </span>
+          {puedeCancelar && (
+            <button
+              type="button"
+              onClick={() => onCancelar(turno)}
+              disabled={cancelando}
+              className="text-sm px-3 py-1 rounded-lg border border-borde transition hover:bg-fondo disabled:opacity-50"
+            >
+              {cancelando ? "Cancelando..." : "Cancelar"}
+            </button>
+          )}
+        </div>
       </div>
     </li>
   );
@@ -78,6 +107,7 @@ export default function MisTurnos() {
   const [error, setError] = useState("");
   const [errorAccion, setErrorAccion] = useState("");
   const [cancelandoId, setCancelandoId] = useState(null);
+  const { avisar } = useAvisos();
 
   useEffect(() => {
     const controlador = new AbortController(); // Para cancelar el pedido si se sale de la pagina
@@ -109,6 +139,7 @@ export default function MisTurnos() {
       setTurnos((anteriores) =>
         anteriores.map((t) => (t.id === turno.id ? respuesta.data.datos : t)),
       );
+      avisar("Turno cancelado.");
     } catch (err) {
       // Por ejemplo: ya paso el plazo para cancelar que definio el negocio
       setErrorAccion(mensajeDeError(err));
@@ -117,7 +148,14 @@ export default function MisTurnos() {
     }
   }
 
-  if (cargando) return <Cargando texto="Cargando tus turnos..." />;
+  if (cargando) {
+    return (
+      <section className="max-w-3xl mx-auto">
+        <h1 className="mb-6 text-3xl font-bold">Mis turnos</h1>
+        <ListaEsqueleto />
+      </section>
+    );
+  }
 
   if (error) {
     return (

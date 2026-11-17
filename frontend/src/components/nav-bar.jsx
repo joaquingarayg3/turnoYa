@@ -13,9 +13,12 @@ const claseSelector = (activo) =>
     activo ? "bg-white text-turno font-semibold shadow-sm" : "text-pizarra hover:text-turno"
   }`
 
+// Header fijo arriba (sticky).
+// En la PC: logo, selector Cliente/Comerciante, links del panel y sesion.
+// En el celular: solo logo y sesion; la navegacion pasa a la barra inferior (barra-inferior.jsx).
 export default function NavBar() {
   const [location, navegar] = useLocation()
-  const { usuario, logout } = useAuth()
+  const { usuario, esAdmin, logout } = useAuth()
 
   // El panel comerciante es todo lo que cuelga de /mis-negocios; el resto es panel cliente
   const enComerciante = location.startsWith("/mis-negocios")
@@ -26,21 +29,20 @@ export default function NavBar() {
   }
 
   return (
-    <header className="bg-white border-b border-borde">
-      {/* En celular se acomoda en dos renglones: logo y sesion arriba, selector y links abajo */}
-      <nav className="max-w-5xl mx-auto px-4 py-3 min-h-16 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Link href="/" className="order-1 mr-2" aria-label="TurnoYa, ir al inicio">
-          <Logo size={32} />
+    <header className="sticky top-0 z-40 border-b border-borde bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+      <nav className="max-w-5xl mx-auto px-4 h-14 sm:h-16 flex items-center gap-4">
+        <Link href="/" className="mr-2" aria-label="TurnoYa, ir al inicio">
+          <Logo size={30} />
         </Link>
 
-        {/* Selector de panel: la misma cuenta usa los dos */}
-        <div className="order-3 sm:order-2 flex rounded-lg bg-fondo p-1 text-sm">
+        {/* Selector de panel (solo PC): la misma cuenta usa los dos */}
+        <div className="hidden sm:flex rounded-lg bg-fondo p-1 text-sm">
           <Link href="/" className={claseSelector(!enComerciante)}>Cliente</Link>
           <Link href="/mis-negocios" className={claseSelector(enComerciante)}>Comerciante</Link>
         </div>
 
-        {/* Links del panel actual */}
-        <div className="order-4 sm:order-3 flex gap-1">
+        {/* Links del panel actual (solo PC) */}
+        <div className="hidden sm:flex gap-1">
           {enComerciante ? (
             <Link href="/mis-negocios" className={claseLink(location === "/mis-negocios")}>Mis negocios</Link>
           ) : (
@@ -52,10 +54,14 @@ export default function NavBar() {
         </div>
 
         {/* Sesion */}
-        <div className="order-2 sm:order-4 ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           {usuario ? (
             <>
-              <span className="hidden sm:inline text-sm text-pizarra">
+              {/* Solo el staff ve el acceso al panel de administracion (en el celular esta en la barra inferior) */}
+              {esAdmin && (
+                <Link href="/admin" className={`hidden sm:inline-flex ${claseLink(location === "/admin")}`}>Admin</Link>
+              )}
+              <span className="hidden md:inline text-sm text-pizarra">
                 Hola, <span className="font-semibold text-turno">{usuario.nombre}</span>
               </span>
               <button
@@ -71,7 +77,7 @@ export default function NavBar() {
               <Link href="/login" className={claseLink(location === "/login")}>Ingresar</Link>
               <Link
                 href="/registro"
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-ya text-turno hover:brightness-95 transition"
+                className="hidden sm:inline-flex px-4 py-2 rounded-lg text-sm font-semibold bg-ya text-turno hover:brightness-95 transition"
               >
                 Crear cuenta
               </Link>

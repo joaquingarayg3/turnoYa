@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using backend.Enums;
 
 namespace backend.Models;
 
@@ -28,7 +29,19 @@ public class Negocio
     [MaxLength(30)]
     public string? Telefono { get; set; }
 
+    // Link a una imagen de portada. null = el front muestra la portada generada segun el rubro
+    [MaxLength(500)]
+    public string? BannerUrl { get; set; }
+
     public bool IsActivo { get; set; } = true;
+
+    // ---- Moderacion (la decide un Admin) ----
+    // Un negocio nuevo queda Pendiente: no aparece en el catalogo hasta que lo aprueban.
+    public EstadoAprobacion EstadoAprobacion { get; set; } = EstadoAprobacion.Pendiente;
+
+    // Por que se rechazo (lo escribe el Admin y lo ve el dueño)
+    [MaxLength(300)]
+    public string? MotivoRechazo { get; set; }
 
     // ---- Configuracion de turnos (la define el dueño) ----
     // Son nullable para que la migracion no rompa negocios ya cargados:

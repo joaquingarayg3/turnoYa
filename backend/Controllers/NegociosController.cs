@@ -1,7 +1,9 @@
 using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using backend.Dtos.Comun;
 using backend.Dtos.Negocio;
+using backend.Enums;
 using backend.Services;
 using backend.Utils.Extensions;
 using backend.Utils.Respuestas;
@@ -9,6 +11,7 @@ using backend.Utils.Respuestas;
 namespace backend.Controllers;
 
 // Track A: panel del comerciante. Todo requiere login y se valida que el negocio sea del usuario.
+// Excepcion: "todos", "{id}/estado" y "{id}/aprobacion" son del panel Admin (se validan por rol, no por dueño).
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -20,6 +23,79 @@ public class NegociosController : ControllerBase
     public NegociosController(NegociosService service)
     {
         _service = service;
+    }
+
+    // GET api/negocios/todos -> solo Admin: todos los negocios con su dueño
+    [HttpGet("todos")]
+    [Authorize(Roles = ROL.ADMIN)]
+    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<Respuesta>> ObtenerTodos()
+    {
+        try
+        {
+            var lista = await _service.ObtenerTodos();
+            var exito = new RespuestaExito("Negocios obtenidos!", HttpStatusCode.OK, lista);
+            return StatusCode((int)exito.CodigoEstado, exito.Res);
+        }
+        catch (RespuestaError error)
+        {
+            return StatusCode((int)error.CodigoEstado, error.Res);
+        }
+        catch (Exception error)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new Respuesta(error.Message));
+        }
+    }
+
+    // PUT api/negocios/{id}/estado  { "isActivo": false } -> solo Admin (moderacion)
+    [HttpPut("{id}/estado")]
+    [Authorize(Roles = ROL.ADMIN)]
+    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<Respuesta>> CambiarEstado(int id, [FromBody] CambiarEstadoDTO dto)
+    {
+        try
+        {
+            var negocio = await _service.CambiarEstado(id, dto);
+            string mensaje = negocio.IsActivo ? "Negocio activado!" : "Negocio desactivado!";
+            var exito = new RespuestaExito(mensaje, HttpStatusCode.OK, negocio);
+            return StatusCode((int)exito.CodigoEstado, exito.Res);
+        }
+        catch (RespuestaError error)
+        {
+            return StatusCode((int)error.CodigoEstado, error.Res);
+        }
+        catch (Exception error)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new Respuesta(error.Message));
+        }
+    }
+
+    // PUT api/negocios/{id}/aprobacion  { "aprobado": false, "motivo": "..." } -> solo Admin
+    [HttpPut("{id}/aprobacion")]
+    [Authorize(Roles = ROL.ADMIN)]
+    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(Respuesta), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<Respuesta>> DecidirAprobacion(int id, [FromBody] AprobacionDTO dto)
+    {
+        try
+        {
+            var negocio = await _service.DecidirAprobacion(id, dto);
+            string mensaje = dto.Aprobado == true ? "Negocio aprobado!" : "Negocio rechazado!";
+            var exito = new RespuestaExito(mensaje, HttpStatusCode.OK, negocio);
+            return StatusCode((int)exito.CodigoEstado, exito.Res);
+        }
+        catch (RespuestaError error)
+        {
+            return StatusCode((int)error.CodigoEstado, error.Res);
+        }
+        catch (Exception error)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new Respuesta(error.Message));
+        }
     }
 
     // GET api/negocios/mios
@@ -74,7 +150,7 @@ public class NegociosController : ControllerBase
     {
         try
         {
-            var negocio = await _service.CrearUno(dto, User.ObtenerUsuarioId());
+            var negocio = await _service.CrearUno(dto, User.ObtenerUsuarioId(), User.IsInRole(ROL.ADMIN));
             var exito = new RespuestaExito("Negocio creado!", HttpStatusCode.Created, negocio);
             return StatusCode((int)exito.CodigoEstado, exito.Res);
         }

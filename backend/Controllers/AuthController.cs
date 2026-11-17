@@ -80,6 +80,13 @@ public class AuthController : ControllerBase
         {
             int id = User.ObtenerUsuarioId();
             var usuario = await _usuarioService.ObtenerUnoPorId(id);
+
+            // Si el Admin lo dio de baja, la sesion se corta la proxima vez que el front recarga
+            if (!usuario.IsActivo)
+            {
+                throw new RespuestaError("Tu cuenta esta desactivada", HttpStatusCode.Unauthorized);
+            }
+
             var exito = new RespuestaExito("Usuario actual", HttpStatusCode.OK, usuario.ToUsuarioDTO());
             return StatusCode((int)exito.CodigoEstado, exito.Res);
         }
@@ -103,7 +110,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var usuario = await _usuarioService.ActualizarRolesPorId(usuarioId, dto);
+            var usuario = await _usuarioService.ActualizarRolesPorId(usuarioId, dto, User.ObtenerUsuarioId());
             var exito = new RespuestaExito("Roles actualizados!", HttpStatusCode.OK, usuario);
             return StatusCode((int)exito.CodigoEstado, exito.Res);
         }
