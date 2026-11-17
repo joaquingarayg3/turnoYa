@@ -1,4 +1,5 @@
 using System.Net;
+using backend.Dtos.Negocio;
 using backend.Dtos.Servicio;
 using backend.Mapping;
 using backend.Models;
@@ -29,7 +30,8 @@ public class ServiciosService
 
     public async Task<ServicioDTO> CrearUno(int negocioId, CrearServicioDTO dto, int usuarioId)
     {
-        await _negociosService.ObtenerEntidadPropia(negocioId, usuarioId);
+        var negocio = await _negociosService.ObtenerEntidadPropia(negocioId, usuarioId);
+        ValidarDuracion(dto.DuracionMinutos!.Value, negocio);
 
         var servicio = new Servicio()
         {
@@ -56,8 +58,24 @@ public class ServiciosService
         // Baja / alta logica: los turnos ya tomados se conservan
         if (dto.IsActivo != null) servicio.IsActivo = (bool)dto.IsActivo;
 
+        // Un servicio inactivo no se reserva, asi que solo se exige el multiplo si queda activo
+        if (servicio.IsActivo) ValidarDuracion(servicio.DuracionMinutos, servicio.Negocio);
+
         await _repo.Guardar();
         return servicio.ToServicioDTO();
+    }
+
+    // La duracion tiene que ser multiplo del intervalo del negocio (ej: intervalo 30 -> 30, 60, 90 min).
+    // Asi cada turno empieza y termina sobre la grilla y no quedan huecos sueltos en la agenda.
+    private static void ValidarDuracion(int duracion, Negocio negocio)
+    {
+        int intervalo = negocio.IntervaloTurnosMinutos ?? NegocioDTO.INTERVALO_DEFECTO;
+        if (duracion % intervalo != 0)
+        {
+            throw new RespuestaError(
+                $"La duracion tiene que ser multiplo de {intervalo} minutos (el intervalo de turnos del negocio)",
+                HttpStatusCode.BadRequest);
+        }
     }
 
     private async Task<Servicio> ObtenerEntidadPropia(int id, int usuarioId)

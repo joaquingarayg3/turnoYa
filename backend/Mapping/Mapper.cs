@@ -1,3 +1,4 @@
+using backend.Dtos.Horario;
 using backend.Dtos.Negocio;
 using backend.Dtos.Servicio;
 using backend.Dtos.Turno;
@@ -51,8 +52,22 @@ public static class Mapper
             .Where(s => !soloServiciosActivos || s.IsActivo)
             .OrderBy(s => s.Nombre)
             .Select(s => s.ToServicioDTO())
-            .ToList()
+            .ToList(),
+        // Solo vienen cargados si la consulta incluyo n.Horarios (detalle del catalogo)
+        Horarios = OrdenarSemana(n.Horarios).Select(h => h.ToHorarioDTO()).ToList()
     };
+
+    public static HorarioDTO ToHorarioDTO(this HorarioAtencion h) => new()
+    {
+        Id = h.Id,
+        DiaSemana = h.DiaSemana,
+        HoraDesde = h.HoraDesde,
+        HoraHasta = h.HoraHasta
+    };
+
+    // Orden de la semana como se lee en Argentina: lunes primero, domingo al final
+    public static IEnumerable<HorarioAtencion> OrdenarSemana(IEnumerable<HorarioAtencion> horarios) =>
+        horarios.OrderBy(h => ((int)h.DiaSemana + 6) % 7).ThenBy(h => h.HoraDesde);
 
     // Requiere haber incluido Servicio.Negocio y Cliente en la consulta
     public static TurnoDTO ToTurnoDTO(this Turno t) => new()

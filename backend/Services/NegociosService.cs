@@ -52,14 +52,31 @@ public class NegociosService
 
     public async Task<NegocioDTO> ActualizarUno(int id, ActualizarNegocioDTO dto, int usuarioId)
     {
-        var negocio = await ObtenerEntidadPropia(id, usuarioId);
+        // Si cambia el intervalo hacen falta los servicios para validarlo
+        var negocio = await ObtenerEntidadPropia(id, usuarioId, incluirServicios: dto.IntervaloTurnosMinutos != null);
+
+        if (dto.IntervaloTurnosMinutos != null)
+        {
+            // Los servicios activos tienen que seguir siendo multiplo del nuevo intervalo
+            int nuevo = dto.IntervaloTurnosMinutos.Value;
+            var incompatibles = negocio.Servicios
+                .Where(s => s.IsActivo && s.DuracionMinutos % nuevo != 0)
+                .Select(s => $"{s.Nombre} ({s.DuracionMinutos} min)")
+                .ToList();
+            if (incompatibles.Count > 0)
+            {
+                throw new RespuestaError(
+                    $"No se puede cambiar el intervalo a {nuevo} minutos: estos servicios no son multiplo: {string.Join(", ", incompatibles)}. Cambia su duracion o desactivalos primero",
+                    HttpStatusCode.BadRequest);
+            }
+            negocio.IntervaloTurnosMinutos = nuevo;
+        }
 
         if (dto.Nombre != null) negocio.Nombre = dto.Nombre.Trim();
         if (dto.Descripcion != null) negocio.Descripcion = dto.Descripcion.Trim();
         if (dto.Rubro != null) negocio.Rubro = dto.Rubro.Trim();
         if (dto.Direccion != null) negocio.Direccion = dto.Direccion.Trim();
         if (dto.Telefono != null) negocio.Telefono = dto.Telefono.Trim();
-        if (dto.IntervaloTurnosMinutos != null) negocio.IntervaloTurnosMinutos = dto.IntervaloTurnosMinutos;
         if (dto.DiasMaxAnticipacion != null) negocio.DiasMaxAnticipacion = dto.DiasMaxAnticipacion;
         if (dto.HorasToleranciaCancelacion != null) negocio.HorasToleranciaCancelacion = dto.HorasToleranciaCancelacion;
         // Baja / alta logica: no se borra para no perder los turnos

@@ -59,6 +59,7 @@ function FormularioServicio({ servicio, onGuardar, onCancelar }) {
           id="duracionMinutos"
           label="Duración (minutos)"
           type="number"
+          ayuda="Múltiplo del intervalo de turnos del negocio (por defecto, 30 min)."
           error={errors.duracionMinutos}
           {...register("duracionMinutos", { valueAsNumber: true })}
         />
