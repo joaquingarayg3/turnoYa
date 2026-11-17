@@ -70,7 +70,7 @@ export default function BarraInferior() {
           <>
             <Item href="/mis-turnos" icono="turnos" texto="Mis turnos" activo={location === "/mis-turnos"} />
             <Item href="/mis-negocios" icono="negocios" texto="Mis negocios" activo={location.startsWith("/mis-negocios")} />
-            {esAdmin && <Item href="/admin" icono="admin" texto="Admin" activo={location === "/admin"} />}
+            {esAdmin && <Item href="/admin" icono="admin" texto="Gestión" activo={location === "/admin"} />}
           </>
         ) : (
           <>
