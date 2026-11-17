@@ -169,7 +169,7 @@ Por eso, para "eliminar" un negocio o servicio desde la app conviene usar la **b
 
 ### Por qué se guarda `FechaHoraFin` en el turno
 
-Aunque se podría calcular (inicio + duración del servicio), tenerla guardada simplifica la validación de doble reserva. Un turno nuevo **choca** con uno existente del mismo servicio si:
+Aunque se podría calcular (inicio + duración del servicio), tenerla guardada simplifica la validación de doble reserva. Un turno nuevo **choca** con uno existente del mismo negocio si:
 
 ```
 nuevoInicio < existenteFin  &&  nuevoFin > existenteInicio
@@ -294,13 +294,16 @@ if (negocio.UsuarioId != usuarioId)
 | GET | `/api/negocios/{negocioId}/servicios` | Dueño | — | Lista de `ServicioDTO` (activos e inactivos) |
 | POST | `/api/negocios/{negocioId}/servicios` | Dueño | `CrearServicioDTO` | `ServicioDTO` (201) |
 | PUT | `/api/servicios/{id}` | Dueño | `ActualizarServicioDTO` (campos opcionales; `isActivo: false` = baja lógica) | `ServicioDTO` |
+| GET | `/api/negocios/{negocioId}/horarios` | Dueño | — | Lista de `HorarioDTO`, de lunes a domingo |
+| PUT | `/api/negocios/{negocioId}/horarios` | Dueño | Lista de `CrearHorarioDTO` (**reemplaza la semana completa**; `[]` = no atiende) | Lista de `HorarioDTO` |
+| GET | `/api/servicios/{servicioId}/disponibilidad?fecha=2026-11-17` | Público | — | Horarios libres de ese día para ese servicio: `["09:00", "10:30"]` |
 | POST | `/api/turnos` | Logueado | `CrearTurnoDTO` | `TurnoDTO` (201) |
 | GET | `/api/turnos/mios` | Logueado | — | Mis turnos, los más nuevos primero |
 | PUT | `/api/turnos/{id}/confirmar` | Dueño | — | `TurnoDTO` (pasa de Pendiente a Confirmado) |
 | PUT | `/api/turnos/{id}/cancelar` | Cliente del turno o dueño del negocio | — | `TurnoDTO` |
 | GET | `/api/negocios/{negocioId}/turnos?fecha=2026-11-12` | Dueño | — | Agenda del negocio (`fecha` opcional) |
 | GET | `/api/catalogo/negocios?busqueda=&rubro=` | Público | — | Negocios activos con sus servicios activos |
-| GET | `/api/catalogo/negocios/{id}` | Público | — | Detalle de un negocio activo |
+| GET | `/api/catalogo/negocios/{id}` | Público | — | Detalle de un negocio activo, con sus servicios activos y sus horarios |
 | GET | `/api/catalogo/rubros` | Público | — | Lista de rubros (texto) |
 
 "Dueño" = el usuario logueado tiene que ser el dueño del negocio; si no, responde **403**.
@@ -311,13 +314,36 @@ if (negocio.UsuarioId != usuarioId)
 |---|---|---|
 | 1 | Al reservar, el turno queda `Pendiente`; el dueño lo pasa a `Confirmado` | `PUT /api/turnos/{id}/confirmar` |
 | 2 | Las fechas viajan en **hora local, sin zona horaria**: `"2026-11-12T10:00:00"` (sin `Z`) | — |
-| 3 | El turno empieza en la grilla del negocio: cada `IntervaloTurnosMinutos` desde las 00:00 (con 30: 9:00, 9:30, 10:00…) | Negocio, por defecto 30 |
+| 3 | El turno empieza en la grilla del negocio: cada `IntervaloTurnosMinutos` desde las 00:00 (con 30: 9:00, 9:30, 10:00…). La duración de cada servicio activo tiene que ser **múltiplo del intervalo** (con 30: 30, 60, 90…) | Negocio, por defecto 30 |
 | 4 | Ni en el pasado ni más allá de `DiasMaxAnticipacion` días | Negocio, por defecto 30 |
 | 5 | El cliente cancela hasta `HorasToleranciaCancelacion` horas antes; después solo cancela el dueño | Negocio, por defecto 2 |
 | 6 | El dueño puede reservar en su propio negocio | — |
 | 7 | Un turno ocupa a **todo el negocio**: no puede haber dos turnos superpuestos, aunque sean de servicios distintos. Los cancelados no cuentan | — |
+| 8 | El turno tiene que caer **completo** dentro de una franja del horario de atención (el servicio termina antes del cierre) | Pestaña Horarios del negocio |
 
 La duración del turno es la `DuracionMinutos` del servicio. Las tres configuraciones del negocio van en `CrearNegocioDTO` y `ActualizarNegocioDTO` (opcionales) y siempre vuelven con valor en `NegocioDTO`.
+
+### Horarios de atención y disponibilidad
+
+El dueño carga la semana como una lista de franjas. Un día sin franjas = cerrado; puede haber varias por día (horario cortado), pero no superpuestas.
+
+```json
+[
+  { "diaSemana": "Monday", "horaDesde": "09:00:00", "horaHasta": "13:00:00" },
+  { "diaSemana": "Monday", "horaDesde": "17:00:00", "horaHasta": "21:00:00" }
+]
+```
+
+`diaSemana` es el enum `DayOfWeek` de .NET (viaja como texto) y las horas son `TimeOnly`.
+
+Con esas franjas, `TurnosService.CalcularInicios` arma los horarios disponibles **por servicio**, porque dependen de su duración. Un inicio es válido si cumple las reglas 3, 4, 7 y 8. Ejemplo con atención de 9 a 12, intervalo de 30 y un turno ya tomado de 10:00 a 10:30:
+
+| Servicio | Horarios disponibles |
+|---|---|
+| Corte (30 min) | 09:00, 09:30, 10:30, 11:00, 11:30 |
+| Corte + barba (60 min) | 09:00, 10:30, 11:00 |
+
+`POST /api/turnos` usa **el mismo cálculo** para validar, así nunca se acepta un horario que no se ofreció. Si el dueño cambia el intervalo del negocio, se rechaza cuando algún servicio activo deja de ser múltiplo.
 
 **Decisión técnica:** se eligió hora local en lugar de UTC porque la app opera en una sola zona horaria (Argentina). Pasar a UTC queda como mejora futura.
 

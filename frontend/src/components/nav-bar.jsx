@@ -27,19 +27,20 @@ export default function NavBar() {
 
   return (
     <header className="bg-white border-b border-borde">
-      <nav className="max-w-5xl mx-auto px-4 h-16 flex items-center gap-4">
-        <Link href="/" className="mr-2" aria-label="TurnoYa, ir al inicio">
+      {/* En celular se acomoda en dos renglones: logo y sesion arriba, selector y links abajo */}
+      <nav className="max-w-5xl mx-auto px-4 py-3 min-h-16 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Link href="/" className="order-1 mr-2" aria-label="TurnoYa, ir al inicio">
           <Logo size={32} />
         </Link>
 
         {/* Selector de panel: la misma cuenta usa los dos */}
-        <div className="flex rounded-lg bg-fondo p-1 text-sm">
+        <div className="order-3 sm:order-2 flex rounded-lg bg-fondo p-1 text-sm">
           <Link href="/" className={claseSelector(!enComerciante)}>Cliente</Link>
           <Link href="/mis-negocios" className={claseSelector(enComerciante)}>Comerciante</Link>
         </div>
 
         {/* Links del panel actual */}
-        <div className="flex gap-1">
+        <div className="order-4 sm:order-3 flex gap-1">
           {enComerciante ? (
             <Link href="/mis-negocios" className={claseLink(location === "/mis-negocios")}>Mis negocios</Link>
           ) : (
@@ -51,10 +52,10 @@ export default function NavBar() {
         </div>
 
         {/* Sesion */}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="order-2 sm:order-4 ml-auto flex items-center gap-2">
           {usuario ? (
             <>
-              <span className="text-sm text-pizarra">
+              <span className="hidden sm:inline text-sm text-pizarra">
                 Hola, <span className="font-semibold text-turno">{usuario.nombre}</span>
               </span>
               <button
