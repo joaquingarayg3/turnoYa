@@ -155,7 +155,7 @@ export default function Catalogo() {
 
       {/* Rubros como botones con su icono: en el celular se deslizan de costado */}
       {rubros.length > 0 && (
-        <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" aria-label="Filtrar por rubro">
+        <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0" aria-label="Filtrar por rubro">
           <button type="button" onClick={() => elegirRubro("")} className={claseChip(filtros.rubro === "")}>
             Todos
           </button>
